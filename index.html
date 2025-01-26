@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ADOFAI Tools</title>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+  </head>
+  <body>
+    <nav class="nav-bar">
+      <div class="nav-left">
+        <img src="assets/icon/adofai.png" alt="ADOFAI" class="nav-icon">
+        <span class="nav-title">ADOFAI Tools</span>
+      </div>
+    </nav>
+    
+    <div class="content">
+      <header>
+        <h1 class="rainbow-text">
+          <span>A</span>
+          <span>D</span>
+          <span>O</span>
+          <span>F</span>
+          <span>A</span>
+          <span>I</span>
+          <span>&nbsp;</span>
+          <span>T</span>
+          <span>o</span>
+          <span>o</span>
+          <span>l</span>
+          <span>s</span>
+        </h1>
+      </header>
+      <main>
+        <button class="enter-button">
+          <span class="icon-enter"></span>
+          立即进入
+        </button>
+        <button class="dev-console-button">
+          <span class="icon-dev"></span>
+          开发者控制台
+        </button>
+        <div class="thanks-box">
+          <h2><span class="icon-heart"></span> 特别感谢</h2>
+          <div class="contributors-list">
+            <!-- 贡献者列表将通过JavaScript动态生成 -->
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+      const { ipcRenderer } = require('electron');
+      const fetch = require('node-fetch');
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const enterButton = document.querySelector('.enter-button');
+        enterButton.addEventListener('click', () => {
+          ipcRenderer.invoke('navigation:goTo', 'html/main.html');
+        });
+        
+        const devConsoleButton = document.querySelector('.dev-console-button');
+        devConsoleButton.addEventListener('click', () => {
+          ipcRenderer.invoke('window:openDevConsole');
+        });
+        
+        // 加载贡献者列表
+        loadContributors();
+      });
+      
+      // 加载贡献者列表函数
+      async function loadContributors() {
+        try {
+          const response = await fetch('https://adofaitools.voin.ink/data/thanks.json');
+          const data = await response.json();
+          
+          const contributorsList = document.querySelector('.contributors-list');
+          contributorsList.innerHTML = data.contributors.map(contributor => `
+            <div class="contributor-item">
+              <div class="contributor-header">
+                <img src="${contributor.avatar}" alt="${contributor.name}" class="contributor-avatar">
+                <div class="contributor-info">
+                  <h3 class="contributor-name">${contributor.name}</h3>
+                  <a href="${contributor.homepage}" class="homepage-link" target="_blank">
+                    <span class="icon-link"></span>
+                    哔哩哔哩主页
+                  </a>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } catch (error) {
+          console.error('Load contributors error:', error);
+        }
+      }
+    </script>
+    <style>
+      .dev-console-button {
+        margin-top: 10px;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        background-color: #2196F3;
+        color: white;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .dev-console-button:hover {
+        background-color: #1976D2;
+        transform: translateY(-2px);
+      }
+      
+      .icon-dev::before {
+        content: "🔧";
+        font-size: 1.2em;
+      }
+      
+      /* 贡献者列表样式 */
+      .contributors-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+        max-width: 1600px;
+        margin: 15px auto;
+        margin-top: 20px;
+      }
+      
+      .contributor-item {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+      }
+      
+      .contributor-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      }
+      
+      .contributor-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0;
+        width: 100%;
+      }
+      
+      .contributor-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      }
+      
+      .contributor-info {
+        min-width: 0;
+        flex: 1;
+      }
+      
+      .contributor-name {
+        font-size: 1em;
+        color: #333;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+      }
+      
+      .homepage-link {
+        color: #666;
+        text-decoration: none;
+        font-size: 0.9em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      .homepage-link:hover {
+        color: #1a1a1a;
+      }
+      
+      .icon-link::before {
+        content: '🔗';
+      }
+      
+      .thanks-box {
+        text-align: center;
+        margin-top: 40px;
+        padding: 0 20px;
+        max-width: 90vw;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .thanks-box h2 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 1.8em;
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+        width: 100%;
+      }
+      
+      .icon-heart {
+        color: #ff4d4f;
+        margin-right: 10px;
+      }
+    </style>
+  </body>
+</html> 
