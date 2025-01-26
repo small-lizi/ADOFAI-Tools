@@ -1,0 +1,462 @@
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes rainbow {
+  0% { color: #ff0000; }
+  20% { color: #ff8800; }
+  40% { color: #ffff00; }
+  60% { color: #00ff00; }
+  80% { color: #0000ff; }
+  100% { color: #ff0000; }
+}
+
+body {
+  background-color: #d3f9d8; /* 浅绿色背景 */
+  margin: 0;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-bar {
+  background-color: white;
+  height: 50px; /* 固定导航栏高度 */
+  padding: 0 20px; /* 移除上下内边距，只保留左右内边距 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%; /* 让左侧区域填满导航栏高度 */
+}
+
+.nav-icon {
+  height: 35px; /* 设置图标高度，稍小于导航栏高度 */
+  width: auto; /* 保持图标比例 */
+  object-fit: contain;
+  padding: 5px 0; /* 添加一点上下内边距 */
+}
+
+.nav-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+}
+
+.login-button {
+  padding: 8px 20px;
+  font-size: 1em;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.login-button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.content {
+  margin-top: 60px; /* 为导航栏留出空间 */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 40px 0;
+  animation: float 3s ease-in-out infinite;
+}
+
+.rainbow-text {
+  margin: 0;
+  font-size: 3.5em;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: -0.05em;
+}
+
+.rainbow-text span {
+  display: inline-block;
+  animation: rainbow 6s linear infinite;
+}
+
+.rainbow-text span:nth-child(1) { animation-delay: -0.5s; }
+.rainbow-text span:nth-child(2) { animation-delay: -1.0s; }
+.rainbow-text span:nth-child(3) { animation-delay: -1.5s; }
+.rainbow-text span:nth-child(4) { animation-delay: -2.0s; }
+.rainbow-text span:nth-child(5) { animation-delay: -2.5s; }
+.rainbow-text span:nth-child(6) { animation-delay: -3.0s; }
+.rainbow-text span:nth-child(8) { animation-delay: -3.5s; }
+.rainbow-text span:nth-child(9) { animation-delay: -4.0s; }
+.rainbow-text span:nth-child(10) { animation-delay: -4.5s; }
+.rainbow-text span:nth-child(11) { animation-delay: -5.0s; }
+.rainbow-text span:nth-child(12) { animation-delay: -5.5s; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 800px;
+}
+
+.enter-button {
+  padding: 15px 30px;
+  font-size: 1.5em;
+  margin: 20px 0;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.enter-button:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.thanks-box {
+  background-color: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 80%;
+  max-width: 600px;
+  text-align: center;
+  margin: 20px 0;
+  transition: transform 0.3s;
+}
+
+.thanks-box:hover {
+  transform: translateY(-5px);
+}
+
+.thanks-box h2 {
+  color: #333;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.iconfont {
+  font-size: 1.2em;
+}
+
+.icon-heart {
+  color: #ff4444;
+  animation: float 1.5s ease-in-out infinite;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  margin: 15vh auto;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 2001;  /* 确保内容在遮罩层之上 */
+}
+
+.close {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 28px;
+  cursor: pointer;
+  color: #666;
+}
+
+.auth-container {
+  padding: 20px 0;
+}
+
+.auth-header {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.auth-tab {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  font-size: 1.1em;
+  cursor: pointer;
+  color: #666;
+  border-bottom: 2px solid transparent;
+}
+
+.auth-tab.active {
+  color: #4CAF50;
+  border-bottom-color: #4CAF50;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  z-index: 2002;
+}
+
+.form-group label {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.form-group input {
+  position: relative;
+  z-index: 2002;  /* 确保输入框在最上层 */
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1em;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.avatar-upload {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.avatar-preview:hover {
+  background-color: #e0e0e0;
+}
+
+.avatar-preview i {
+  font-size: 2em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.avatar-preview span {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.submit-btn {
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.3s;
+}
+
+.submit-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 自定义图标样式 */
+.icon-user::before,
+.icon-add::before,
+.icon-enter::before,
+.icon-heart::before {
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.icon-user::before {
+  content: "👤";
+}
+
+.icon-add::before {
+  content: "+";
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.icon-enter::before {
+  content: "➜";
+}
+
+.icon-heart::before {
+  content: "❤️";
+}
+
+/* 调整图标样式 */
+.icon-user,
+.icon-add,
+.icon-enter,
+.icon-heart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+}
+
+.avatar-preview .icon-add {
+  font-size: 2em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.enter-button .icon-enter {
+  font-size: 1.2em;
+}
+
+.thanks-box .icon-heart {
+  color: #ff4444;
+  animation: float 1.5s ease-in-out infinite;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s;
+}
+
+.user-info:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  color: #333;
+  font-size: 1em;
+}
+
+.user-container {
+  position: relative;
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 5px;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 5px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-btn {
+  width: 100%;
+  padding: 8px 15px;
+  border: none;
+  background: none;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9em;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.menu-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.profile-btn:hover {
+  color: #4CAF50;
+}
+
+.logout-btn:hover {
+  color: #ff4444;
+}
+
+/* 确保输入框在模态窗口中正常工作 */
+.modal input {
+  position: relative;
+  z-index: 3;
+}
+
+/* 防止文本选择问题 */
+input, textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-app-region: no-drag;
+} 
