@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentTool = null;
   let isToolInstalled = false;
 
+  // 添加一个变量来跟踪正在下载的工具
+  let downloadingTools = new Map(); // 存储正在下载的工具ID和其下载进度
+
   // 显示工具信息
   async function showToolInfo(tool) {
     currentTool = tool;
@@ -37,24 +40,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     toolDocs.src = tool.documentation;
 
-    // 检查工具版本
+    // 检查工具版本和下载状态
     const versionInfo = await ipcRenderer.invoke('tools:checkVersion', tool.id);
     isToolInstalled = versionInfo.installed;
     
     // 更新按钮状态
     openBtn.disabled = !isToolInstalled;
-    if (isToolInstalled) {
-      if (versionInfo.version !== tool.version) {
-        downloadBtn.innerHTML = '<span class="icon-download"></span>更新';
-        downloadBtn.classList.add('update');
-      } else {
-        downloadBtn.innerHTML = '<span class="icon-download"></span>已安装';
+    
+    // 检查该工具是否正在下载
+    if (downloadingTools.has(tool.id)) {
+        const progress = downloadingTools.get(tool.id);
         downloadBtn.disabled = true;
-      }
+        downloadBtn.innerHTML = `<span class="icon-download"></span>下载中 ${progress}%`;
+    } else if (isToolInstalled) {
+        if (versionInfo.version !== tool.version) {
+            downloadBtn.innerHTML = '<span class="icon-download"></span>更新';
+            downloadBtn.classList.add('update');
+            downloadBtn.disabled = false;
+        } else {
+            downloadBtn.innerHTML = '<span class="icon-download"></span>已安装';
+            downloadBtn.disabled = true;
+            downloadBtn.classList.remove('update');
+        }
     } else {
-      downloadBtn.innerHTML = '<span class="icon-download"></span>下载';
-      downloadBtn.disabled = false;
-      downloadBtn.classList.remove('update');
+        downloadBtn.innerHTML = '<span class="icon-download"></span>下载';
+        downloadBtn.disabled = false;
+        downloadBtn.classList.remove('update');
     }
   }
 
@@ -102,15 +113,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isUpdate = downloadBtn.classList.contains('update');
       downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新中...' : '下载中...'}`;
       
+      // 立即添加到下载状态跟踪中，初始进度为0
+      downloadingTools.set(currentTool.id, 0);
+      
       try {
         const result = await ipcRenderer.invoke('tools:download', { 
           url: currentTool.downloadUrl,
           toolId: currentTool.id,
           version: currentTool.version
         });
-        if (result.success) {
-          downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新中...' : '下载中...'}`;
-        } else {
+        if (!result.success) {
+          // 下载失败时移除下载状态
+          downloadingTools.delete(currentTool.id);
           downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新失败' : '下载失败'}`;
           setTimeout(() => {
             downloadBtn.disabled = false;
@@ -119,6 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (error) {
         console.error('Download error:', error);
+        // 发生错误时也移除下载状态
+        downloadingTools.delete(currentTool.id);
         downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新失败' : '下载失败'}`;
         setTimeout(() => {
           downloadBtn.disabled = false;
@@ -143,31 +159,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 添加下载进度监听
-  ipcRenderer.on('download:progress', (event, { percent }) => {
-    if (downloadBtn) {
-      downloadBtn.innerHTML = `<span class="icon-download"></span>下载中 ${Math.round(percent)}%`;
+  // 修改下载进度监听
+  ipcRenderer.on('download:progress', (event, { toolId, percent }) => {
+    if (toolId) {  // 确保有 toolId
+      downloadingTools.set(toolId, Math.round(percent));
+      // 只有当前显示的工具正在下载时才更新按钮
+      if (currentTool && currentTool.id === toolId) {
+        downloadBtn.disabled = true;  // 确保按钮保持禁用状态
+        downloadBtn.innerHTML = `<span class="icon-download"></span>下载中 ${Math.round(percent)}%`;
+      }
     }
   });
 
-  // 添加下载完成监听
-  ipcRenderer.on('download:complete', async (event, { success, isExe }) => {
-    if (downloadBtn) {
+  // 修改下载完成监听
+  ipcRenderer.on('download:complete', async (event, { toolId, success, isExe }) => {
+    if (!toolId) return;  // 确保有 toolId
+    
+    // 移除下载状态
+    downloadingTools.delete(toolId);
+    
+    if (currentTool && currentTool.id === toolId) {
       if (success) {
         downloadBtn.innerHTML = '<span class="icon-download"></span>下载完成';
         // 重新检查工具版本状态
-        if (currentTool) {
-          const versionInfo = await ipcRenderer.invoke('tools:checkVersion', currentTool.id);
-          isToolInstalled = versionInfo.installed;
-          openBtn.disabled = !isToolInstalled;
-          
-          if (isToolInstalled) {
-            setTimeout(() => {
-              downloadBtn.disabled = true;
-              downloadBtn.innerHTML = '<span class="icon-download"></span>已安装';
-              downloadBtn.classList.remove('update');
-            }, isExe ? 0 : 2000);  // exe文件立即更新状态
-          }
+        const versionInfo = await ipcRenderer.invoke('tools:checkVersion', currentTool.id);
+        isToolInstalled = versionInfo.installed;
+        openBtn.disabled = !isToolInstalled;
+        
+        if (isToolInstalled) {
+          setTimeout(() => {
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="icon-download"></span>已安装';
+            downloadBtn.classList.remove('update');
+          }, isExe ? 0 : 2000);
         }
       } else {
         downloadBtn.innerHTML = '<span class="icon-download"></span>下载失败';

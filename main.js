@@ -52,7 +52,7 @@ ipcMain.handle('navigation:goTo', (event, path) => {
 // 在已有的代码后添加
 async function syncToolsData() {
   try {
-    const response = await fetch('https://adofaitools.voin.ink/data/tools.json');
+    const response = await fetch('https://adofaitools.top/data/tools.json');
     const toolsData = await response.json();
     
     // 确保tools目录存在
@@ -120,7 +120,10 @@ ipcMain.handle('tools:download', async (event, { url, toolId, version }) => {
       item.on('updated', (event, state) => {
         if (state === 'progressing') {
           const progress = item.getReceivedBytes() / item.getTotalBytes();
-          win.webContents.send('download:progress', { percent: progress * 100 });
+          win.webContents.send('download:progress', { 
+            toolId: toolId,
+            percent: progress * 100 
+          });
         }
       });
     
@@ -138,7 +141,11 @@ ipcMain.handle('tools:download', async (event, { url, toolId, version }) => {
                 path.join(toolDir, 'version.json'),
                 JSON.stringify(versionInfo, null, 2)
               );
-              win.webContents.send('download:complete', { success: true });
+              win.webContents.send('download:complete', { 
+                toolId: toolId,
+                success: true,
+                isExe: true 
+              });
               return;
             }
             
@@ -161,16 +168,24 @@ ipcMain.handle('tools:download', async (event, { url, toolId, version }) => {
             );
             
             // 发送成功消息
-            win.webContents.send('download:complete', { success: true });
+            win.webContents.send('download:complete', { 
+              toolId: toolId,
+              success: true,
+              isExe: false
+            });
           } catch (error) {
             console.error('Post-download processing error:', error);
             win.webContents.send('download:complete', { 
+              toolId: toolId,
               success: false, 
               error: (fileExt === '.zip' || fileExt === '.rar') ? '解压失败' : '处理文件失败'
             });
           }
         } else {
-          win.webContents.send('download:complete', { success: false });
+          win.webContents.send('download:complete', { 
+            toolId: toolId,
+            success: false 
+          });
         }
       });
     };
@@ -260,7 +275,7 @@ ipcMain.handle('tools:checkVersion', (event, toolId) => {
 // 添加版本检查函数
 async function checkForUpdates() {
   try {
-    const response = await fetch('https://adofaitools.voin.ink/version.json');
+    const response = await fetch('https://adofaitools.top/version.json');
     const data = await response.json();
     const currentVersion = app.getVersion();
     
@@ -342,7 +357,7 @@ ipcMain.handle('window:openDevConsole', () => {
   // 设置窗口菜单
   devConsole.setMenu(menu);
   
-  devConsole.loadURL('https://adofaitools.voin.ink/');
+  devConsole.loadURL('https://adofaitools.top/');
 });
 
 app.on('window-all-closed', () => {
