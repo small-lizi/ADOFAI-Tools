@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const navButtons = document.querySelectorAll('.nav-btn');
   const pages = document.querySelectorAll('.page-container');
   
-  // 默认显示工具页面
-  showPage('tools');
+  // 修改默认显示公告页面
+  showPage('announcement');
   
   // 导航按钮点击事件
   navButtons.forEach(button => {

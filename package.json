@@ -4,7 +4,7 @@
     "build": "electron-builder"
   },
   "name": "adofai-tools",
-  "version": "1.2.0",
+  "version": "1.4.2",
   "main": "main.js",
   "keywords": [],
   "author": "lizi",
@@ -62,7 +62,15 @@
       "installerIcon": "assets/icon/adofai_tools.ico",
       "uninstallerIcon": "assets/icon/adofai_tools.ico",
       "installerHeaderIcon": "assets/icon/adofai_tools.ico",
-      "deleteAppDataOnUninstall": false
-    }
+      "deleteAppDataOnUninstall": false,
+      "include": "installer.nsh"
+    },
+    "extraFiles": [
+      {
+        "from": "asar_update.bat",
+        "to": "asar_update.bat",
+        "filter": ["**/*"]
+      }
+    ]
   }
 }

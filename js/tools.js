@@ -23,14 +23,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 添加一个变量来跟踪正在下载的工具
   let downloadingTools = new Map(); // 存储正在下载的工具ID和其下载进度
 
-  // 显示工具信息
+  // 添加一个函数来获取最新的工具数据
+  async function getLatestToolData(toolId) {
+    try {
+      const response = await fetch('https://adofaitools.top/data/tools.json');
+      const data = await response.json();
+      return data.tools.find(tool => tool.id === toolId);
+    } catch (error) {
+      console.error('Failed to get latest tool data:', error);
+      return null;
+    }
+  }
+
+  // 修改显示工具信息的函数
   async function showToolInfo(tool) {
+    // 获取最新的工具数据
+    const latestTool = await getLatestToolData(tool.id);
+    if (latestTool) {
+      tool = latestTool;  // 使用最新的数据
+    }
+
     currentTool = tool;
     toolIcon.src = tool.icon;
     toolName.textContent = tool.name;
     toolDescription.textContent = tool.description;
+    toolDescription.title = tool.description;
     authorAvatar.src = tool.author.avatar;
     authorName.textContent = tool.author.name;
+    document.querySelector('.download-count .count').textContent = tool.downloads || 0;
     if (tool.author.link) {
       authorName.href = tool.author.link;
       authorName.style.cursor = 'pointer';
@@ -38,6 +58,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       authorName.href = '#';
       authorName.style.cursor = 'default';
     }
+    
+    // 重置导航按钮状态
+    document.querySelectorAll('.tool-nav-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector('.tool-nav-btn[data-view="home"]').classList.add('active');
+    
+    // 显示文档
     toolDocs.src = tool.documentation;
 
     // 检查工具版本和下载状态
@@ -113,16 +141,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isUpdate = downloadBtn.classList.contains('update');
       downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新中...' : '下载中...'}`;
       
-      // 立即添加到下载状态跟踪中，初始进度为0
-      downloadingTools.set(currentTool.id, 0);
-      
       try {
-        const result = await ipcRenderer.invoke('tools:download', { 
+        // 更新下载次数
+        const response = await fetch('https://adofaitools.top/api/update_downloads.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            toolId: currentTool.id
+          })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          // 更新显示的下载次数
+          document.querySelector('.download-count .count').textContent = result.downloads;
+          // 更新当前工具的下载次数
+          currentTool.downloads = result.downloads;
+        }
+
+        // 继续原有的下载逻辑
+        const downloadResult = await ipcRenderer.invoke('tools:download', { 
           url: currentTool.downloadUrl,
           toolId: currentTool.id,
           version: currentTool.version
         });
-        if (!result.success) {
+        if (!downloadResult.success) {
           // 下载失败时移除下载状态
           downloadingTools.delete(currentTool.id);
           downloadBtn.innerHTML = `<span class="icon-download"></span>${isUpdate ? '更新失败' : '下载失败'}`;
@@ -201,6 +246,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 2000);
       }
     }
+  });
+
+  // 添加导航按钮点击事件
+  document.querySelectorAll('.tool-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      
+      // 更新按钮状态
+      document.querySelectorAll('.tool-nav-btn').forEach(b => {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      
+      // 切换显示内容
+      if (view === 'home') {
+        toolDocs.src = currentTool.documentation;
+      } else if (view === 'changelog') {
+        // 创建一个HTML页面来显示更新日志
+        const changelogContent = currentTool.changelog || '暂无更新日志';
+        const changelogHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  padding: 20px;
+                  white-space: pre-wrap;
+                }
+                h1 {
+                  color: #333;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 10px;
+                }
+                .no-changelog {
+                  color: #666;
+                  font-style: italic;
+                  text-align: center;
+                  margin-top: 40px;
+                }
+              </style>
+            </head>
+            <body>
+              <h1>更新日志</h1>
+              <div class="${currentTool.changelog ? '' : 'no-changelog'}">
+                ${changelogContent}
+              </div>
+            </body>
+          </html>
+        `;
+        toolDocs.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(changelogHtml)}`);
+      }
+    });
   });
 
   // 初始渲染工具列表

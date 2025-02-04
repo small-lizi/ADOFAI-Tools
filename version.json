@@ -1,6 +1,4 @@
 {
-    "version": "1.0.1",
-    "changelog": "1. 修复了某些bug\n2. 添加了新功能\n3. 优化了性能",
-    "downloadUrl": "https://adofaitools.voin.ink/downloads/ADOFAI-Tools-Setup-1.0.1.exe",
-    "releaseDate": "2024-03-21"
+    "appVersion": "1.4.2",
+    "asarVersion": "1.1.0"
   }

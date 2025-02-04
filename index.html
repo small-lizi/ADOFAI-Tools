@@ -3,12 +3,27 @@
   <head>
     <title>ADOFAI Tools</title>
     <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <link rel="stylesheet" type="text/css" href="Subject/spring/spring.css">
+    <style>
+      body {
+        background-image: url('assets/index.png');  /* 注意这里路径改为相对于index.html的路径 */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+    </style>
   </head>
   <body>
     <nav class="nav-bar">
+      <div class="lantern left-lantern">
+        <img src="Subject/spring/cny_lantern_blue.png" alt="蓝色灯笼">
+      </div>
       <div class="nav-left">
         <img src="assets/icon/adofai.png" alt="ADOFAI" class="nav-icon">
         <span class="nav-title">ADOFAI Tools</span>
+      </div>
+      <div class="lantern right-lantern">
+        <img src="Subject/spring/cny_lantern.png" alt="红色灯笼">
       </div>
     </nav>
     
@@ -46,9 +61,24 @@
         </div>
       </main>
     </div>
+
+    <!-- 添加版本信息显示 -->
+    <div class="version-info">
+      <span class="app-version">APP版本: </span>
+      <span class="asar-version">资源版本: </span>
+    </div>
+
+    <!-- 在 content div 后添加更新提示 -->
+    <div class="update-notification" style="display: none;">
+      <div class="update-icon">🔄</div>
+      <div class="update-message">正在更新资源...</div>
+    </div>
+
     <script>
       const { ipcRenderer } = require('electron');
       const fetch = require('node-fetch');
+      const fs = require('fs');
+      const path = require('path');
       
       document.addEventListener('DOMContentLoaded', () => {
         const enterButton = document.querySelector('.enter-button');
@@ -63,6 +93,9 @@
         
         // 加载贡献者列表
         loadContributors();
+        
+        // 加载版本信息
+        loadVersionInfo();
       });
       
       // 加载贡献者列表函数
@@ -90,6 +123,46 @@
           console.error('Load contributors error:', error);
         }
       }
+
+      // 添加加载版本信息函数
+      function loadVersionInfo() {
+        try {
+          // 读取version.json文件
+          const versionPath = path.join(__dirname, 'version.json');
+          const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+          
+          // 更新版本信息显示
+          document.querySelector('.app-version').textContent = `APP版本: ${versionData.appVersion}`;
+          document.querySelector('.asar-version').textContent = `资源版本: ${versionData.asarVersion}`;
+        } catch (error) {
+          console.error('Load version info error:', error);
+          // 如果读取失败，显示错误信息
+          document.querySelector('.app-version').textContent = 'APP版本: 未知';
+          document.querySelector('.asar-version').textContent = '资源版本: 未知';
+        }
+      }
+
+      // 添加更新相关的事件监听
+      ipcRenderer.on('asar:updateStart', () => {
+        const notification = document.querySelector('.update-notification');
+        notification.style.display = 'flex';
+        setTimeout(() => notification.classList.add('show'), 100);
+      });
+
+      ipcRenderer.on('asar:updateReady', () => {
+        const notification = document.querySelector('.update-notification');
+        notification.querySelector('.update-message').textContent = '更新完成，即将重启...';
+      });
+
+      ipcRenderer.on('asar:updateError', (event, error) => {
+        const notification = document.querySelector('.update-notification');
+        notification.querySelector('.update-message').textContent = '更新失败: ' + error;
+        notification.style.background = 'rgba(220, 53, 69, 0.8)';
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => notification.style.display = 'none', 300);
+        }, 3000);
+      });
     </script>
     <style>
       .dev-console-button {
@@ -214,6 +287,57 @@
         color: #ff4d4f;
         margin-right: 10px;
       }
+
+      /* 添加版本信息样式 */
+      .version-info {
+        position: fixed;
+        left: 20px;
+        bottom: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px 15px;
+        border-radius: 8px;
+        color: white;
+        font-size: 0.9em;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .version-info span {
+        opacity: 0.8;
+      }
+
+      /* 添加更新提示样式 */
+      .update-notification {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+      }
+
+      .update-notification.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .update-icon {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
     </style>
+    <script src="Subject/spring/fireworks.js"></script>
   </body>
 </html> 

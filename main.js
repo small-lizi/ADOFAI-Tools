@@ -102,6 +102,26 @@ ipcMain.handle('tools:download', async (event, { url, toolId, version }) => {
   try {
     const win = BrowserWindow.getFocusedWindow();
     if (!win) return;
+
+    // 添加清理旧文件的函数
+    const cleanOldFiles = (dirPath) => {
+      if (fs.existsSync(dirPath)) {
+        const files = fs.readdirSync(dirPath);
+        for (const file of files) {
+          const curPath = path.join(dirPath, file);
+          if (fs.lstatSync(curPath).isDirectory()) {
+            // 递归清理子目录
+            cleanOldFiles(curPath);
+            fs.rmdirSync(curPath);
+          } else {
+            // 删除文件，但保留version.json
+            if (file !== 'version.json') {
+              fs.unlinkSync(curPath);
+            }
+          }
+        }
+      }
+    };
   
     // 为工具下载创建一个新的 will-download 处理函数
     const handleToolDownload = (event, item, webContents) => {
@@ -113,6 +133,9 @@ ipcMain.handle('tools:download', async (event, { url, toolId, version }) => {
   
       if (!fs.existsSync(toolDir)) {
         fs.mkdirSync(toolDir, { recursive: true });
+      } else {
+        // 在下载新版本前清理旧文件
+        cleanOldFiles(toolDir);
       }
   
       item.setSavePath(filePath);
@@ -272,18 +295,70 @@ ipcMain.handle('tools:checkVersion', (event, toolId) => {
   }
 });
 
-// 添加版本检查函数
+// 添加资源更新检查函数
+async function checkForAsarUpdate() {
+  try {
+    // 读取本地版本
+    const localVersionPath = path.join(__dirname, 'version.json');
+    const localVersionData = JSON.parse(fs.readFileSync(localVersionPath, 'utf8'));
+    
+    // 获取服务器版本
+    const response = await fetch('https://adofaitools.top/version.json');
+    const serverData = await response.json();
+    
+    // 比较版本
+    if (serverData.asarVersion && serverData.asarVersion !== localVersionData.asarVersion) {
+      const win = BrowserWindow.getFocusedWindow();
+      if (!win) return;
+      
+      // 通知渲染进程开始更新
+      win.webContents.send('asar:updateStart');
+      
+      try {
+        // 下载新的asar文件
+        const asarResponse = await fetch(serverData.asarUrl);
+        if (!asarResponse.ok) throw new Error('Download failed');
+        
+        const buffer = await asarResponse.buffer();
+        const tmpPath = path.join(app.getPath('exe'), '../app.asar.tmp');
+        fs.writeFileSync(tmpPath, buffer);
+        
+        // 通知渲染进程更新完成，准备重启
+        win.webContents.send('asar:updateReady');
+        
+        // 等待一小段时间让用户看到提示
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 运行更新脚本
+        const scriptPath = path.join(app.getPath('exe'), '../asar_update.bat');
+        require('child_process').spawn(scriptPath, [], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        
+        // 退出当前程序
+        app.quit();
+      } catch (error) {
+        console.error('Asar update error:', error);
+        win.webContents.send('asar:updateError', error.message);
+      }
+    }
+  } catch (error) {
+    console.error('Check asar update error:', error);
+  }
+}
+
+// 修改现有的 checkForUpdates 函数，使其与资源更新共存
 async function checkForUpdates() {
   try {
     const response = await fetch('https://adofaitools.top/version.json');
     const data = await response.json();
     const currentVersion = app.getVersion();
     
-    // 将版本号分割为数字数组进行比较
+    // 版本比较逻辑保持不变
     const serverVersion = data.version.split('.').map(Number);
     const localVersion = currentVersion.split('.').map(Number);
     
-    // 比较版本号，只有服务器版本更高时才提示更新
     let hasUpdate = false;
     for (let i = 0; i < 3; i++) {
       if (serverVersion[i] > localVersion[i]) {
@@ -304,15 +379,49 @@ async function checkForUpdates() {
       });
 
       if (result.response === 0) {
-        // 用户选择更新
-        const downloadResult = await dialog.showMessageBox({
+        // 下载安装包
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return;
+
+        // 创建下载进度对话框
+        const progressResult = await dialog.showMessageBox({
           type: 'info',
-          message: '即将打开下载页面，下载完成后请关闭当前程序并安装新版本。',
-          buttons: ['确定', '取消']
+          title: '正在下载更新',
+          message: '正在下载更新安装包，下载完成后将自动安装。',
+          buttons: ['确定']
         });
 
-        if (downloadResult.response === 0) {
-          shell.openExternal(data.downloadUrl);
+        try {
+          // 下载安装包
+          const setupResponse = await fetch(data.downloadUrl);
+          if (!setupResponse.ok) throw new Error('Download failed');
+          
+          const buffer = await setupResponse.buffer();
+          
+          // 保存到临时目录
+          const setupPath = path.join(app.getPath('temp'), 'ADOFAI-Tools-Setup.exe');
+          fs.writeFileSync(setupPath, buffer);
+          
+          // 提示用户即将安装
+          const installResult = await dialog.showMessageBox({
+            type: 'info',
+            title: '下载完成',
+            message: '更新包下载完成，点击确定将关闭程序并开始安装。',
+            buttons: ['确定', '取消'],
+            defaultId: 0
+          });
+          
+          if (installResult.response === 0) {
+            // 运行安装程序并退出当前程序
+            require('child_process').spawn(setupPath, [], {
+              detached: true,
+              stdio: 'ignore'
+            });
+            app.quit();
+          }
+        } catch (error) {
+          console.error('Download setup error:', error);
+          dialog.showErrorBox('更新失败', '下载安装包时出现错误，请稍后重试。');
         }
       }
     }
@@ -324,8 +433,11 @@ async function checkForUpdates() {
 // 在应用启动时检查更新
 app.whenReady().then(() => {
   createWindow();
-  // 延迟几秒检查更新，避免影响启动速度
-  setTimeout(checkForUpdates, 3000);
+  // 延迟执行更新检查
+  setTimeout(() => {
+    checkForUpdates();
+    checkForAsarUpdate();
+  }, 3000);
 });
 
 // 添加手动检查更新的IPC处理器
