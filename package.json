@@ -1,34 +1,33 @@
 {
+  "name": "adofai-tools",
+  "version": "1.5.5",
+  "description": "A simple Electron application",
+  "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "start:main": "electron main.js",
     "build": "electron-builder"
   },
-  "name": "adofai-tools",
-  "version": "1.4.2",
-  "main": "main.js",
-  "keywords": [],
-  "author": "lizi",
-  "license": "MIT",
-  "description": "ADOFAI Tools - A toolset for ADOFAI players",
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "electron-dl": "^4.0.0",
-    "extract-zip": "^2.0.1",
-    "node-fetch": "^2.7.0"
+    "adm-zip": "^0.5.10"
   },
   "build": {
-    "appId": "com.lizi.adofaitools",
-    "productName": "ADOFAI Tools",
-    "copyright": "Copyright © 2024 lizi",
-    "asar": true,
-    "directories": {
-      "output": "dist"
-    },
+    "appId": "com.adofai.tools",
+    "asar": false,
+    "icon": "assets/img/icon.ico",
     "files": [
       "**/*",
+      "version.json",
+      "updater.js",
+      "updater.html",
+      "main.js",
+      "index.html",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
       "!**/node_modules/*.d.ts",
@@ -42,16 +41,8 @@
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "assets/icon/adofai_tools.ico",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "target": "nsis",
+      "icon": "assets/img/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -59,18 +50,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ADOFAI Tools",
-      "installerIcon": "assets/icon/adofai_tools.ico",
-      "uninstallerIcon": "assets/icon/adofai_tools.ico",
-      "installerHeaderIcon": "assets/icon/adofai_tools.ico",
-      "deleteAppDataOnUninstall": false,
-      "include": "installer.nsh"
-    },
-    "extraFiles": [
-      {
-        "from": "asar_update.bat",
-        "to": "asar_update.bat",
-        "filter": ["**/*"]
-      }
-    ]
+      "installerIcon": "assets/img/icon.ico",
+      "uninstallerIcon": "assets/img/icon.ico",
+      "installerHeaderIcon": "assets/img/icon.ico"
+    }
   }
 }
