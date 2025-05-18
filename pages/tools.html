@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ADOFAI Tools - 工具</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tools-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tool-sidebar {
+            width: 280px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            z-index: 100;
+        }
+
+        .tool-content {
+            flex: 1;
+            background: #121212;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            display: flex;
+        }
+
+        .tool-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .tool-header-content {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .tool-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .tool-header-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tool-header-info h2 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tool-meta-info {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .meta-item::after {
+            content: '•';
+            margin-left: 8px;
+            color: #666;
+        }
+
+        .meta-item:last-child::after {
+            display: none;
+        }
+
+        .author-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .author-info:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .author-name {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .tool-header-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tool-header-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tool-header-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .download-button {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: #2196f3;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-button:hover {
+            background: #1976d2;
+        }
+
+        .download-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .download-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: width 0.3s;
+        }
+
+        .download-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tooltip-content {
+            position: fixed;
+            top: 10%;
+            left: 280px;
+            padding: 16px;
+            background: #262626;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #fff;
+            white-space: pre-wrap;
+            width: 320px;
+            max-height: 400px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+            transform: translateX(-8px);
+        }
+
+        .tooltip-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tooltip-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+
+        .tooltip-content::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+
+        .tooltip-content::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .tool-header-button:hover .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .tooltip-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 100%;
+            border-width: 8px;
+            border-style: solid;
+            border-color: transparent #333 transparent transparent;
+        }
+
+        .tooltip-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .tooltip-body {
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .tooltip-content.description .tooltip-body {
+            white-space: pre-wrap;
+        }
+
+        .tooltip-content.changelog .tooltip-body {
+            white-space: pre-wrap;
+        }
+
+        .changelog-item {
+            margin-bottom: 16px;
+        }
+
+        .changelog-version {
+            font-weight: 600;
+            color: #2196f3;
+            margin-bottom: 4px;
+        }
+
+        .changelog-date {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .changelog-content {
+            color: #ccc;
+        }
+
+        .tool-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .tool-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .tool-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin-right: 12px;
+        }
+
+        .tool-item-info {
+            flex: 1;
+        }
+
+        .tool-item-name {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .tool-item-description {
+            font-size: 12px;
+            color: #888;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .tool-details {
+            width: 100%;
+            height: 100%;
+            display: flex;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .detail-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            margin-right: 20px;
+        }
+
+        .detail-info h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+        }
+
+        .detail-meta {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .detail-description {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            color: #ccc;
+        }
+
+        .detail-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .primary-button {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .primary-button:hover {
+            background-color: #1976d2;
+        }
+
+        .secondary-button {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .secondary-button:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        .no-doc-message {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .context-menu {
+            position: fixed;
+            background: #262626;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 4px 0;
+            min-width: 160px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            animation: menuFadeIn 0.15s ease-out;
+        }
+
+        @keyframes menuFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .context-menu-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-item {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <title-bar></title-bar>
+    <div class="main-container">
+        <side-bar></side-bar>
+        <div class="content-area">
+            <div class="tools-container">
+                <div class="tool-sidebar">
+                    <div class="tool-header" id="selectedToolHeader">
+                        <!-- 选中的工具信息将在这里显示 -->
+                    </div>
+                    <div class="tool-list" id="toolList">
+                        <!-- 工具列表将在这里显示 -->
+                    </div>
+                </div>
+                <div class="tool-content" id="toolContent">
+                    <!-- 工具详情将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" id="menuOpenFolder">打开工具文件夹</div>
+        <div class="context-menu-item" id="menuOpenDoc">在浏览器中打开文档</div>
+    </div>
+    <script src="../components/titlebar.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/webviewer.js"></script>
+    <script>
+        // 监听页面切换事件
+        document.addEventListener('page-change', (event) => {
+            const page = event.detail.page;
+            if (page === 'tools') {
+                // 当切换到工具页面时，不需要额外处理
+                return;
+            }
+            // 切换到其他页面
+            window.location.href = `${page}.html`;
+        });
+
+        // 工具列表相关逻辑
+        let tools = [];
+        let selectedTool = null;
+
+        // 工具下载状态管理
+        let downloadStatus = new Map();
+
+        // 初始化IPC监听
+        const { ipcRenderer } = require('electron');
+
+        // 监听下载进度
+        ipcRenderer.on('download-progress', (event, { toolId, progress }) => {
+            downloadStatus.set(toolId, { status: 'downloading', progress });
+            updateDownloadButton(toolId);
+        });
+
+        // 监听下载完成
+        ipcRenderer.on('download-complete', (event, { toolId }) => {
+            downloadStatus.set(toolId, { status: 'completed', progress: 100 });
+            updateDownloadButton(toolId);
+            
+            // 1秒后将按钮改为"打开"
+            setTimeout(() => {
+                downloadStatus.set(toolId, { status: 'ready', progress: 100 });
+                updateDownloadButton(toolId);
+            }, 1000);
+        });
+
+        // 监听下载错误
+        ipcRenderer.on('download-error', (event, { toolId, error }) => {
+            downloadStatus.set(toolId, { status: 'error', error });
+            updateDownloadButton(toolId);
+        });
+
+        // 更新下载按钮状态
+        async function updateDownloadButton(toolId) {
+            const button = document.querySelector('.download-button');
+            if (!button || selectedTool?.id !== toolId) return;
+
+            const status = downloadStatus.get(toolId);
+            const info = await ipcRenderer.invoke('get-tool-info', toolId);
+
+            let buttonText = '下载';
+            let progress = 0;
+            let disabled = false;
+            let onClick = `handleDownload('${toolId}', '${selectedTool.downloadUrl}', '${selectedTool.version}')`;
+
+            if (status) {
+                switch (status.status) {
+                    case 'downloading':
+                        buttonText = `下载中 ${status.progress}%`;
+                        progress = status.progress;
+                        disabled = true;
+                        break;
+                    case 'completed':
+                        buttonText = '已下载';
+                        progress = 100;
+                        disabled = true;
+                        break;
+                    case 'ready':
+                        buttonText = '打开';
+                        progress = 100;
+                        onClick = `openToolDirectory('${toolId}')`;
+                        break;
+                    case 'needUpdate':
+                        buttonText = '更新';
+                        progress = 100;
+                        break;
+                    case 'error':
+                        buttonText = '下载失败';
+                        break;
+                }
+            } else if (info) {
+                // 如果有本地信息但没有下载状态，设置为ready或needUpdate
+                if (info.version < selectedTool.version) {
+                    buttonText = '更新';
+                    progress = 100;
+                } else {
+                    buttonText = '打开';
+                    progress = 100;
+                    onClick = `openToolDirectory('${toolId}')`;
+                }
+            }
+
+            button.innerHTML = `
+                <div class="download-progress" style="width: ${progress}%"></div>
+                <span class="download-text">${buttonText}</span>
+            `;
+            button.disabled = disabled;
+            button.setAttribute('onclick', onClick);
+        }
+
+        // 处理下载
+        async function handleDownload(toolId, url, version) {
+            try {
+                const info = await ipcRenderer.invoke('get-tool-info', toolId);
+                
+                if (info && info.version < version) {
+                    // 需要更新，先删除旧版本
+                    await ipcRenderer.invoke('delete-tool', toolId);
+                }
+
+                // 更新下载次数
+                try {
+                    const response = await fetch('https://adofaitools.top/api/update_downloads.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ toolId })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('更新下载次数失败');
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        // 更新本地显示的下载次数
+                        selectedTool.downloads = result.downloads;
+                        renderSelectedToolHeader();
+                    }
+                } catch (err) {
+                    console.error('更新下载次数失败:', err);
+                    // 继续下载，即使更新下载次数失败
+                }
+                
+                downloadStatus.set(toolId, { status: 'downloading', progress: 0 });
+                updateDownloadButton(toolId);
+                
+                await ipcRenderer.invoke('download-tool', {
+                    toolId,
+                    url,
+                    version
+                });
+            } catch (err) {
+                console.error('下载失败:', err);
+                downloadStatus.set(toolId, { status: 'error', error: err.message });
+                updateDownloadButton(toolId);
+            }
+        }
+
+        // 渲染选中的工具头部信息
+        function renderSelectedToolHeader() {
+            const headerElement = document.getElementById('selectedToolHeader');
+            if (!selectedTool) {
+                headerElement.innerHTML = '';
+                return;
+            }
+
+            const formattedChangelog = selectedTool.changelog ? formatChangelog(selectedTool.changelog) : '暂无更新日志';
+
+            headerElement.innerHTML = `
+                <div class="tool-header-content">
+                    <img src="${selectedTool.icon}" class="tool-icon" alt="${selectedTool.name}">
+                    <div class="tool-header-info">
+                        <h2>${selectedTool.name}</h2>
+                        <div class="tool-meta-info">
+                            <span class="meta-item">版本 ${selectedTool.version}</span>
+                            <span class="meta-item">下载次数 ${selectedTool.downloads || 0}</span>
+                            <span class="meta-item">发布于 ${selectedTool.releaseDate}</span>
+                        </div>
+                        <div class="author-info" onclick="openAuthorLink('${selectedTool.author.link}')">
+                            <img src="${selectedTool.author.avatar}" class="author-avatar" alt="${selectedTool.author.name}">
+                            <span class="author-name">${selectedTool.author.name}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-header-buttons">
+                    <button class="tool-header-button">
+                        简介
+                        <div class="tooltip-content description">
+                            <div class="tooltip-title">工具简介</div>
+                            <div class="tooltip-body">${selectedTool.description || '暂无简介'}</div>
+                        </div>
+                    </button>
+                    <button class="tool-header-button">
+                        更新日志
+                        <div class="tooltip-content changelog">
+                            <div class="tooltip-title">更新日志</div>
+                            <div class="tooltip-body">${formattedChangelog}</div>
+                        </div>
+                    </button>
+                </div>
+                <button class="download-button" onclick="handleDownload('${selectedTool.id}', '${selectedTool.downloadUrl}', '${selectedTool.version}')">
+                    <div class="download-progress" style="width: 0%"></div>
+                    <span class="download-text">下载</span>
+                </button>
+            `;
+
+            // 更新下载按钮状态
+            updateDownloadButton(selectedTool.id);
+        }
+
+        // 格式化更新日志
+        function formatChangelog(changelog) {
+            if (!changelog) return '暂无更新日志';
+            
+            // 假设changelog是一个数组，每个元素包含version、date和content
+            if (Array.isArray(changelog)) {
+                return changelog.map(log => `
+                    <div class="changelog-item">
+                        <div class="changelog-version">版本 ${log.version}</div>
+                        <div class="changelog-date">${log.date}</div>
+                        <div class="changelog-content">${log.content}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // 如果是字符串，直接返回
+            return changelog;
+        }
+
+        // 使用系统默认浏览器打开作者链接
+        function openAuthorLink(url) {
+            if (!url) return;
+            const { shell } = require('electron');
+            shell.openExternal(url);
+        }
+
+        // 渲染工具列表
+        function renderToolList() {
+            const listElement = document.getElementById('toolList');
+            listElement.innerHTML = tools.map(tool => `
+                <div class="tool-item ${tool.id === selectedTool?.id ? 'active' : ''}" 
+                     data-tool='${JSON.stringify(tool)}'
+                     onclick="selectTool('${tool.id}')">
+                    <img src="${tool.icon}" class="tool-item-icon" alt="${tool.name}">
+                    <div class="tool-item-info">
+                        <div class="tool-item-name">${tool.name}</div>
+                        <div class="tool-item-description">${tool.description}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // 为每个工具项添加右键菜单事件
+            const toolItems = listElement.querySelectorAll('.tool-item');
+            toolItems.forEach(item => {
+                item.addEventListener('contextmenu', (e) => {
+                    const tool = JSON.parse(item.dataset.tool);
+                    showContextMenu(e, tool);
+                });
+            });
+        }
+
+        // 渲染工具详情
+        function renderToolDetails() {
+            const contentElement = document.getElementById('toolContent');
+            if (!selectedTool) {
+                contentElement.innerHTML = '';
+                return;
+            }
+
+            if (selectedTool.documentation) {
+                contentElement.innerHTML = `
+                    <div class="tool-details">
+                        <web-viewer 
+                            url="${selectedTool.documentation}"
+                            tool-id="${selectedTool.id}"
+                            show-comments>
+                        </web-viewer>
+                    </div>
+                `;
+            } else {
+                contentElement.innerHTML = `
+                    <div class="no-doc-message">该工具暂时没有文档</div>
+                `;
+            }
+        }
+
+        // 选择工具
+        async function selectTool(toolId) {
+            selectedTool = tools.find(tool => tool.id === toolId);
+            
+            // 检查本地工具信息
+            if (selectedTool) {
+                try {
+                    const info = await ipcRenderer.invoke('get-tool-info', toolId);
+                    if (info) {
+                        // 更新下载状态
+                        if (info.version < selectedTool.version) {
+                            downloadStatus.set(toolId, { status: 'needUpdate', progress: 100 });
+                        } else {
+                            downloadStatus.set(toolId, { status: 'ready', progress: 100 });
+                        }
+                    }
+                } catch (err) {
+                    console.error('检查工具信息失败:', err);
+                }
+            }
+
+            renderSelectedToolHeader();
+            renderToolList();
+            renderToolDetails();
+        }
+
+        // 打开链接
+        function openLink(url) {
+            if (!url) return;
+            window.open(url);
+        }
+
+        // 打开工具目录
+        async function openToolDirectory(toolId) {
+            try {
+                await ipcRenderer.invoke('open-tool-directory', toolId);
+            } catch (err) {
+                console.error('打开工具目录失败:', err);
+            }
+        }
+
+        // 获取工具列表数据
+        async function fetchTools() {
+            try {
+                const response = await fetch('https://adofaitools.top/api/get_tools.php');
+                const data = await response.json();
+                tools = data.tools;
+                if (tools.length > 0) {
+                    selectTool(tools[0].id);
+                }
+            } catch (error) {
+                console.error('获取工具列表失败:', error);
+            }
+        }
+
+        let contextMenuTool = null;
+
+        // 显示菜单
+        function showContextMenu(e, tool) {
+            e.preventDefault(); // 阻止默认右键菜单
+            
+            contextMenuTool = tool;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            
+            // 调整菜单位置
+            let x = e.clientX;
+            let y = e.clientY;
+            
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            if (x + menuWidth > windowWidth) {
+                x = windowWidth - menuWidth;
+            }
+            
+            if (y + menuHeight > windowHeight) {
+                y = windowHeight - menuHeight;
+            }
+            
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+        }
+
+        // 隐藏菜单
+        function hideContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'none';
+            contextMenuTool = null;
+        }
+
+        // 初始化菜单
+        function initContextMenu() {
+            // 点击页面其他地方时隐藏菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.context-menu')) {
+                    hideContextMenu();
+                }
+            });
+            
+            // 打开工具文件夹
+            document.getElementById('menuOpenFolder').addEventListener('click', () => {
+                if (contextMenuTool) {
+                    openToolDirectory(contextMenuTool.id);
+                }
+                hideContextMenu();
+            });
+            
+            // 在浏览器中打开文档
+            document.getElementById('menuOpenDoc').addEventListener('click', () => {
+                if (contextMenuTool && contextMenuTool.documentation) {
+                    const { shell } = require('electron');
+                    shell.openExternal(contextMenuTool.documentation);
+                }
+                hideContextMenu();
+            });
+        }
+
+        // 在页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTools();
+            initContextMenu();
+        });
+    </script>
+</body>
+</html> 

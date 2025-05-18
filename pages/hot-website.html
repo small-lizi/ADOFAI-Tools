@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ADOFAI Tools - 热门页面</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <title-bar></title-bar>
+    <div class="main-container">
+        <side-bar></side-bar>
+        <div class="content-area" id="webviewContainer">
+            <!-- WebViewer will be inserted here -->
+        </div>
+    </div>
+
+    <script src="../components/titlebar.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/webviewer.js"></script>
+    <script>
+        // 从 URL 参数获取网站地址
+        const urlParams = new URLSearchParams(window.location.search);
+        const websiteUrl = urlParams.get('url');
+        const pageTitle = urlParams.get('title') || '热门页面';
+        
+        // 设置页面标题
+        document.title = `ADOFAI Tools - ${pageTitle}`;
+        
+        // 创建 WebViewer
+        if (websiteUrl) {
+            const container = document.getElementById('webviewContainer');
+            container.innerHTML = `<web-viewer url="${websiteUrl}"></web-viewer>`;
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>检查更新</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000000;
+            overflow: hidden;
+        }
+        .content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .mascot-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .mascot-container:hover {
+            transform: scale(1.02);
+        }
+        .mascot {
+            width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+        }
+        .speech-bubble {
+            position: relative;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 15px 20px;
+            margin-left: 20px;
+            max-width: 300px;
+            font-size: 14px;
+            color: #333;
+            animation: bubble-pop 0.5s ease-out;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-style: solid;
+            border-width: 10px 10px 10px 0;
+            border-color: transparent rgba(255, 255, 255, 0.9) transparent transparent;
+        }
+        @keyframes bubble-pop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .mascot-container.has-update {
+            animation: bounce 1s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        .update-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ccc;
+            font-size: 13px;
+            color: #666;
+        }
+        .version {
+            color: #2196f3;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="mascot-container" id="mascotContainer">
+            <img src="assets/img/ATL看板娘.png" class="mascot" alt="看板娘">
+            <div class="speech-bubble" id="speechBubble">
+                不要着急，瓦达西正在检查更新~
+            </div>
+        </div>
+    </div>
+    <script>
+        const { ipcRenderer } = require('electron');
+        let updateInfo = null;
+        let startTime = Date.now();
+        const minDisplayTime = 5000; // 最小显示时间5秒
+        
+        // 页面加载完成后发送检查更新的消息
+        window.addEventListener('DOMContentLoaded', () => {
+            ipcRenderer.send('check-update');
+        });
+
+        // 监听更新检查结果
+        ipcRenderer.on('update-available', (event, info) => {
+            updateInfo = info;
+            const mascotContainer = document.getElementById('mascotContainer');
+            const speechBubble = document.getElementById('speechBubble');
+            
+            mascotContainer.classList.add('has-update');
+            speechBubble.innerHTML = `亲亲发现新版本了呢~ <span class="version">v${info.version}</span>
+
+<div class="update-info">瓦达西来介绍一下更新内容：
+${info.changelog.split('\n').map(line => '• ' + line).join('\n')}
+
+rua一rua我就可以更新了哦~</div>`;
+            
+            // 添加点击事件
+            mascotContainer.onclick = () => {
+                ipcRenderer.send('open-download-url', info.downloadUrl[0]);
+            };
+        });
+
+        // 监听无更新消息
+        ipcRenderer.on('no-update', () => {
+            const remainingTime = minDisplayTime - (Date.now() - startTime);
+            if (remainingTime > 0) {
+                // 如果还没到最小显示时间，等待剩余时间
+                setTimeout(() => {
+                    ipcRenderer.send('load-main-window');
+                }, remainingTime);
+            } else {
+                // 已经超过最小显示时间，直接进入主窗口
+                ipcRenderer.send('load-main-window');
+            }
+        });
+    </script>
+</body>
+</html> 

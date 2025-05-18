@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ADOFAI Tools - 社区</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tools-sidebar {
+            width: 60px;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            gap: 15px;
+            border-right: 1px solid #333;
+            position: relative;
+            z-index: 100;
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .tool-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .tool-icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .tool-name {
+            position: absolute;
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 101;
+        }
+
+        .tool-icon:hover .tool-name {
+            opacity: 1;
+        }
+
+        /* 添加右键菜单样式 */
+        .context-menu {
+            position: fixed;
+            background: #262626;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 4px 0;
+            min-width: 160px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            animation: menuFadeIn 0.15s ease-out;
+        }
+
+        @keyframes menuFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .context-menu-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <title-bar></title-bar>
+    <div class="main-container">
+        <side-bar></side-bar>
+        <div class="tools-sidebar" id="toolsSidebar">
+            <!-- 工具图标将通过 JavaScript 动态添加 -->
+        </div>
+        <div class="content-area">
+            <web-viewer id="toolViewer" url="https://adofaitools.top/community"></web-viewer>
+        </div>
+    </div>
+    <!-- 添加右键菜单 -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" id="menuOpenInBrowser">在浏览器中打开</div>
+        <div class="context-menu-item" id="menuCopyUrl">复制链接</div>
+    </div>
+    <script src="../components/titlebar.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/webviewer.js"></script>
+    <script>
+        // 获取工具列表并渲染
+        async function fetchAndRenderTools() {
+            try {
+                const response = await fetch('https://adofaitools.top/api/get_community.php');
+                const data = await response.json();
+                const toolsSidebar = document.getElementById('toolsSidebar');
+                const toolViewer = document.getElementById('toolViewer');
+
+                data.downloads.forEach((tool, index) => {
+                    const toolIcon = document.createElement('div');
+                    toolIcon.className = 'tool-icon';
+                    
+                    const toolName = document.createElement('div');
+                    toolName.className = 'tool-name';
+                    toolName.textContent = tool.name;
+                    
+                    const img = document.createElement('img');
+                    img.src = tool.icon;
+                    img.alt = tool.name;
+                    
+                    toolIcon.appendChild(img);
+                    toolIcon.appendChild(toolName);
+
+                    toolIcon.addEventListener('click', () => {
+                        toolViewer.setAttribute('url', tool.url);
+                        // 移除其他图标的选中状态
+                        document.querySelectorAll('.tool-icon').forEach(icon => {
+                            icon.style.backgroundColor = 'transparent';
+                        });
+                        // 添加当前图标的选中状态
+                        toolIcon.style.backgroundColor = '#333';
+                    });
+
+                    // 添加右键菜单事件
+                    toolIcon.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        showContextMenu(e, tool);
+                    });
+
+                    // 默认选中第一个工具
+                    if (index === 0) {
+                        toolIcon.style.backgroundColor = '#333';
+                        toolViewer.setAttribute('url', tool.url);
+                    }
+
+                    toolsSidebar.appendChild(toolIcon);
+                });
+            } catch (error) {
+                console.error('获取社区列表失败:', error);
+            }
+        }
+
+        let contextMenuTool = null;
+
+        // 显示右键菜单
+        function showContextMenu(e, tool) {
+            e.preventDefault();
+            
+            contextMenuTool = tool;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            
+            // 调整菜单位置
+            let x = e.clientX;
+            let y = e.clientY;
+            
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            if (x + menuWidth > windowWidth) {
+                x = windowWidth - menuWidth;
+            }
+            
+            if (y + menuHeight > windowHeight) {
+                y = windowHeight - menuHeight;
+            }
+            
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+        }
+
+        // 隐藏右键菜单
+        function hideContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'none';
+            contextMenuTool = null;
+        }
+
+        // 初始化右键菜单
+        function initContextMenu() {
+            // 点击页面其他地方时隐藏菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.context-menu')) {
+                    hideContextMenu();
+                }
+            });
+            
+            // 在浏览器中打开
+            document.getElementById('menuOpenInBrowser').addEventListener('click', () => {
+                if (contextMenuTool) {
+                    const { shell } = require('electron');
+                    shell.openExternal(contextMenuTool.url);
+                }
+                hideContextMenu();
+            });
+            
+            // 复制链接
+            document.getElementById('menuCopyUrl').addEventListener('click', () => {
+                if (contextMenuTool) {
+                    navigator.clipboard.writeText(contextMenuTool.url)
+                        .then(() => {
+                            // 可以添加一个提示，表示复制成功
+                            console.log('链接已复制到剪贴板');
+                        })
+                        .catch(err => {
+                            console.error('复制失败:', err);
+                        });
+                }
+                hideContextMenu();
+            });
+        }
+
+        // 在页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderTools();
+            initContextMenu();
+        });
+    </script>
+</body>
+</html> 

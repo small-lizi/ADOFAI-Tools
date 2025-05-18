@@ -1,58 +1,48 @@
 {
   "name": "adofai-tools",
-  "version": "1.5.5",
-  "description": "A simple Electron application",
+  "version": "1.6.7",
+  "description": "ADOFAI Tools - A Rhythm Game Tool Collection",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "start:main": "electron main.js",
-    "build": "electron-builder"
+    "build": "electron-builder build --win --publish never",
+    "dist": "electron-builder"
   },
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "MemSys_Lizi",
+    "email": "001@memsyslizi.site"
+  },
+  "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron": "^28.2.0",
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10"
+    "adm-zip": "^0.5.10",
+    "axios": "^1.6.5"
   },
   "build": {
-    "appId": "com.adofai.tools",
-    "asar": false,
-    "icon": "assets/img/icon.ico",
-    "files": [
-      "**/*",
-      "version.json",
-      "updater.js",
-      "updater.html",
-      "main.js",
-      "index.html",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-      "!**/node_modules/*.d.ts",
-      "!**/node_modules/.bin",
-      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
-      "!.editorconfig",
-      "!**/._*",
-      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
-      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
-      "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
-    ],
+    "appId": "com.memsyslizi.adofai-tools",
+    "productName": "ADOFAI Tools",
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "target": "nsis",
-      "icon": "assets/img/icon.ico"
+      "icon": "assets/img/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "ADOFAI Tools",
-      "installerIcon": "assets/img/icon.ico",
-      "uninstallerIcon": "assets/img/icon.ico",
-      "installerHeaderIcon": "assets/img/icon.ico"
+      "createStartMenuShortcut": true
     }
   }
 }

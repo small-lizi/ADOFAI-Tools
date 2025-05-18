@@ -1,436 +1,477 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog } = require('electron')
 const path = require('path')
-const https = require('https')
+const axios = require('axios')
 const fs = require('fs')
+const os = require('os')
 const AdmZip = require('adm-zip')
-const { spawn } = require('child_process');
 
-let mainWindow
+let mainWindow = null
+let updateWindow = null
 let tray = null
+let isQuiting = false
+
+// 确保只运行一个实例
 const gotTheLock = app.requestSingleInstanceLock()
 
-// 直接从服务器获取JSON数据
-async function fetchJson(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = ''
-      res.on('data', (chunk) => data += chunk)
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data)
-          resolve(jsonData)
-        } catch (error) {
-          reject(error)
+if (!gotTheLock) {
+    app.quit()
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // 当运行第二个实例时，聚焦到主窗口
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore()
+            mainWindow.show()
+            mainWindow.focus()
         }
-      })
-    }).on('error', reject)
-  })
+    })
 }
 
-// 创建托盘
+// 创建托盘图标
 function createTray() {
-  tray = new Tray(path.join(__dirname, 'assets', 'img', 'icon.png'));
-  const contextMenu = Menu.buildFromTemplate([
-    { 
-      label: '显示主界面', 
-      click: () => {
-        mainWindow.show();
-        mainWindow.focus();
-      }
-    },
-    { type: 'separator' },
-    { 
-      label: '退出', 
-      click: () => {
-        app.exit();
-      }
-    }
-  ]);
+    const iconPath = process.platform === 'darwin' 
+        ? path.join(__dirname, 'assets', 'img', 'icon-mac.png')
+        : path.join(__dirname, 'assets', 'img', 'icon.png')
+    
+    tray = new Tray(iconPath)
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: '显示主窗口',
+            click: () => {
+                mainWindow.show()
+                mainWindow.focus()
+            }
+        },
+        {
+            label: '退出',
+            click: () => {
+                isQuiting = true
+                app.quit()
+            }
+        }
+    ])
 
-  tray.setToolTip('ADOFAI Tools');
-  tray.setContextMenu(contextMenu);
+    tray.setToolTip('ADOFAI Tools')
+    tray.setContextMenu(contextMenu)
 
-  // 点击托盘图标显示主窗口
-  tray.on('click', () => {
-    mainWindow.show();
-    mainWindow.focus();
-  });
+    // 点击托盘图标显示主窗口
+    tray.on('click', () => {
+        mainWindow.show()
+        mainWindow.focus()
+    })
 }
 
-async function createWindow() {
-  if (!gotTheLock) {
-    app.quit();
-    return;
+// 获取工具存储路径
+function getToolsPath() {
+  const platform = process.platform
+  if (platform === 'darwin') {
+    // macOS: 应用程序文件夹
+    return path.join('/Applications', 'RD Plugin Hub')
+  } else if (platform === 'win32') {
+    // Windows: 优先使用D盘，没有则使用C盘
+    const dDrivePath = 'D:\\RD Plugin Hub'
+    const cDrivePath = 'C:\\RD Plugin Hub'
+    
+    try {
+      // 检查D盘是否存在且可写
+      fs.accessSync('D:\\', fs.constants.W_OK)
+      return dDrivePath
+    } catch (err) {
+      return cDrivePath
+    }
   }
+}
 
+// 确保工具目录存在
+function ensureToolDirectory(toolId) {
+  const toolsPath = getToolsPath()
+  const toolPath = path.join(toolsPath, toolId)
+  
+  try {
+    if (!fs.existsSync(toolsPath)) {
+      fs.mkdirSync(toolsPath, { recursive: true })
+    }
+    if (!fs.existsSync(toolPath)) {
+      fs.mkdirSync(toolPath)
+    }
+    return toolPath
+  } catch (err) {
+    console.error('创建工具目录失败:', err)
+    throw err
+  }
+}
+
+// 保存工具信息
+function saveToolInfo(toolId, version, downloadDate) {
+  const toolPath = path.join(getToolsPath(), toolId)
+  const infoPath = path.join(toolPath, 'info.json')
+  
+  const info = {
+    version,
+    downloadDate,
+    toolId
+  }
+  
+  fs.writeFileSync(infoPath, JSON.stringify(info, null, 2))
+}
+
+// 获取工具信息
+function getToolInfo(toolId) {
+  try {
+    const toolPath = path.join(getToolsPath(), toolId)
+    const infoPath = path.join(toolPath, 'info.json')
+    
+    if (fs.existsSync(infoPath)) {
+      const info = JSON.parse(fs.readFileSync(infoPath, 'utf8'))
+      return info
+    }
+    return null
+  } catch (err) {
+    console.error('读取工具信息失败:', err)
+    return null
+  }
+}
+
+// 解压工具
+async function extractTool(toolPath, zipPath) {
+  try {
+    const zip = new AdmZip(zipPath)
+    zip.extractAllTo(toolPath, true)
+    
+    // 解压完成后删除 zip 文件
+    fs.unlinkSync(zipPath)
+    return true
+  } catch (err) {
+    console.error('解压工具失败:', err)
+    return false
+  }
+}
+
+// 打开工具目录
+function openToolDirectory(toolId) {
+  try {
+    const toolPath = path.join(getToolsPath(), toolId)
+    if (fs.existsSync(toolPath)) {
+      shell.openPath(toolPath)
+      return true
+    }
+    return false
+  } catch (err) {
+    console.error('打开工具目录失败:', err)
+    return false
+  }
+}
+
+// 下载工具
+async function downloadTool(toolId, url, version) {
+  try {
+    const toolPath = ensureToolDirectory(toolId)
+    
+    // 从 URL 中获取文件扩展名
+    const fileExt = url.split('.').pop().toLowerCase()
+    const isZip = fileExt === 'zip'
+    
+    // 根据文件类型决定保存的文件名
+    const fileName = isZip ? 'tool.zip' : `tool.${fileExt}`
+    const filePath = path.join(toolPath, fileName)
+    
+    const response = await axios({
+      url,
+      method: 'GET',
+      responseType: 'stream'
+    })
+
+    const totalLength = response.headers['content-length']
+    let downloadedLength = 0
+
+    const writer = fs.createWriteStream(filePath)
+
+    response.data.on('data', (chunk) => {
+      downloadedLength += chunk.length
+      const progress = Math.round((downloadedLength * 100) / totalLength)
+      mainWindow.webContents.send('download-progress', { toolId, progress })
+    })
+
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve)
+      writer.on('error', reject)
+      response.data.pipe(writer)
+    })
+
+    // 只有 ZIP 文件才需要解压
+    if (isZip) {
+      await extractTool(toolPath, filePath)
+    }
+
+    // 保存工具信息
+    saveToolInfo(toolId, version, new Date().toISOString())
+    
+    mainWindow.webContents.send('download-complete', { toolId })
+    return true
+  } catch (err) {
+    console.error('下载工具失败:', err)
+    mainWindow.webContents.send('download-error', { toolId, error: err.message })
+    return false
+  }
+}
+
+// 删除工具
+function deleteTool(toolId) {
+  try {
+    const toolPath = path.join(getToolsPath(), toolId)
+    if (fs.existsSync(toolPath)) {
+      fs.rmSync(toolPath, { recursive: true, force: true })
+    }
+    return true
+  } catch (err) {
+    console.error('删除工具失败:', err)
+    return false
+  }
+}
+
+// 注册IPC处理程序
+ipcMain.handle('get-tool-info', async (event, toolId) => {
+  return getToolInfo(toolId)
+})
+
+ipcMain.handle('download-tool', async (event, { toolId, url, version }) => {
+  return downloadTool(toolId, url, version)
+})
+
+ipcMain.handle('delete-tool', async (event, toolId) => {
+  return deleteTool(toolId)
+})
+
+ipcMain.handle('open-tool-directory', async (event, toolId) => {
+  return openToolDirectory(toolId)
+})
+
+// 处理清除缓存请求
+ipcMain.on('clear-cache', async (event) => {
+  const win = BrowserWindow.getFocusedWindow()
+  if (win) {
+    // 清除所有类型的缓存数据
+    await win.webContents.session.clearCache()
+    await win.webContents.session.clearStorageData({
+      storages: [
+        'appcache',
+        'cookies',
+        'filesystem',
+        'indexdb',
+        'localstorage',
+        'shadercache',
+        'websql',
+        'serviceworkers',
+        'cachestorage'
+      ]
+    })
+    
+    // 重启应用
+    app.relaunch({ args: process.argv.slice(1).concat(['--restart']) })
+    app.exit(0)
+  }
+})
+
+function createUpdateWindow() {
+  updateWindow = new BrowserWindow({
+    width: 800,
+    height: 500,
+    icon: path.join(__dirname, 'assets', 'img', 'icon.png'),
+    frame: false,
+    resizable: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webviewTag: true
+    }
+  })
+
+  updateWindow.loadFile('update.html')
+}
+
+function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1600,
     height: 900,
-    frame: false, // 无边框
-    titleBarStyle: 'hidden',
+    frame: false,
+    icon: path.join(__dirname, 'assets', 'img', 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       webviewTag: true,
-      webSecurity: false,
-      allowRunningInsecureContent: true,
-      plugins: true
+      webSecurity: false, // 允许加载外部资源
+      allowRunningInsecureContent: true, // 允许运行不安全内容
+      experimentalFeatures: true // 启用实验性功能
     }
   })
 
-  // 移除所有安全策略限制
-  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Access-Control-Allow-Origin': ['*'],
-        'Content-Security-Policy': ['*']
-      }
-    })
-  });
+  mainWindow.loadFile('pages/shouye.html')
 
-  // 加载页面
-  mainWindow.loadFile('index.html')
-  
-  // 通知渲染进程
-  mainWindow.webContents.on('did-finish-load', () => {
-    console.log('页面加载完成，通知渲染进程')
-    mainWindow.webContents.send('tools-json-updated')
-  })
-
-  // 处理窗口关闭事件，改为最小化到托盘
+  // 处理窗口关闭事件
   mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
+    if (!isQuiting) {
+      event.preventDefault()
+      mainWindow.hide()
     }
-    return false;
-  });
+  })
 
-  // 创建托盘
-  createTray();
-}
-
-// 读取配置文件
-let config;
-try {
-  config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
-} catch (error) {
-  config = {
-    toolsPath: path.join(require('os').homedir(), 'ADOFAI-Tools'),
-    defaultDownloadPath: path.join(require('os').homedir(), 'ADOFAI-Tools')
-  };
-}
-
-// 确保工具目录存在
-if (!fs.existsSync(config.toolsPath)) {
-  fs.mkdirSync(config.toolsPath, { recursive: true });
-}
-
-// 处理工具下载请求
-ipcMain.handle('download-tool', async (event, tool) => {
-  const toolDir = path.join(config.toolsPath, tool.id);
-  const fileUrl = new URL(tool.downloadUrl);
-  const fileName = path.basename(fileUrl.pathname) || 'download.zip';
-  const downloadPath = path.join(toolDir, fileName);
-  
-  // 创建工具目录
-  if (!fs.existsSync(toolDir)) {
-    fs.mkdirSync(toolDir, { recursive: true });
-  }
-
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(downloadPath);
-    https.get(tool.downloadUrl, (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        // 处理重定向
-        https.get(response.headers.location, handleResponse);
-      } else {
-        handleResponse(response);
-      }
-    }).on('error', reject);
-
-    function handleResponse(response) {
-      const total = parseInt(response.headers['content-length'], 10);
-      let current = 0;
-
-      response.on('data', (chunk) => {
-        current += chunk.length;
-        event.sender.send('download-progress', {
-          toolId: tool.id,
-          progress: (current / total) * 100,
-          total,
-          current
-        });
+  // 处理所有webview的新窗口和下载
+  app.on('web-contents-created', (event, contents) => {
+    if (contents.getType() === 'webview') {
+      // 处理新窗口打开
+      contents.setWindowOpenHandler((details) => {
+        contents.loadURL(details.url);
+        return { action: 'deny' };
       });
 
-      response.pipe(file);
-
-      file.on('finish', async () => {
-        file.close();
-
-        try {
-          // 检查文件是否为ZIP
-          if (fileName.toLowerCase().endsWith('.zip')) {
-            try {
-              const zip = new AdmZip(downloadPath);
-              zip.extractAllTo(toolDir, true);
-              // 解压成功后删除zip
-              fs.unlinkSync(downloadPath);
-            } catch (error) {
-              console.log('文件不是有效的ZIP格式，保留原始文件');
-            }
-          }
-
-          // 保存工具信息
-          fs.writeFileSync(
-            path.join(toolDir, 'info.json'),
-            JSON.stringify({
-              id: tool.id,
-              version: tool.version,
-              installDate: new Date().toISOString(),
-              fileName: fileName
-            })
-          );
-          
-          resolve({
-            path: toolDir,
-            isWeb: tool.downloadUrl.startsWith('http')
-          });
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }
-  });
-});
-
-// 检查工具是否已安装
-ipcMain.handle('check-tool-installed', (event, toolId) => {
-  const toolDir = path.join(config.toolsPath, toolId);
-  const infoPath = path.join(toolDir, 'info.json');
-  
-  try {
-    if (fs.existsSync(infoPath)) {
-      const info = JSON.parse(fs.readFileSync(infoPath));
-      return info;
-    }
-  } catch (error) {
-    console.error('检查工具安装状态失败:', error);
-  }
-  return null;
-});
-
-// 打开目录
-ipcMain.handle('open-tool-dir', (event, toolId) => {
-  const toolDir = path.join(config.toolsPath, toolId);
-  require('electron').shell.openPath(toolDir);
-});
-
-// 处理渲染进程请求获取工具列表
-ipcMain.handle('get-tools-json', async () => {
-  try {
-    const data = await fetchJson('https://adofaitools.top/data/tools.json')
-    return data.tools || data
-  } catch (error) {
-    console.error('获取工具列表失败:', error)
-    return null
-  }
-})
-
-// 处理渲染进程请求获取谱面列表
-ipcMain.handle('get-down-json', async () => {
-  try {
-    const data = await fetchJson('https://adofaitools.top/data/down.json')
-    return data.downloads || data
-  } catch (error) {
-    console.error('获取谱面列表失败:', error)
-    return null
-  }
-})
-
-// 修改window-controls事件处理
-ipcMain.on('window-controls', (event, action) => {
-  switch (action) {
-    case 'minimize':
-      mainWindow.minimize();
-      break;
-    case 'maximize':
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-      } else {
-        mainWindow.maximize();
-      }
-      break;
-    case 'close':
-      mainWindow.hide(); // 改为隐藏窗口而不是关闭
-      break;
-  }
-});
-
-let adminWindow = null;
-
-// 添加IPC事件处理
-ipcMain.on('open-admin-console', () => {
-    if (adminWindow) {
-        adminWindow.focus();
+      // 防止重复监听下载事件
+      if (contents.session.listenerCount('will-download') > 0) {
         return;
-    }
+      }
 
-    // 创建菜单模板
-    const menuTemplate = [
-        {
-            label: '强制刷新',
-            click: async () => {
-                const choice = await require('electron').dialog.showMessageBox(adminWindow, {
-                    type: 'warning',
-                    buttons: ['确认', '取消'],
-                    title: '确认清除数据',
-                    message: '此操作将清除所有应用数据，包括浏览器缓存。确定继续吗？'
-                });
+      // WebViewer的普通下载处理
+      contents.session.on('will-download', (event, item, webContents) => {
+        // 获取文件名
+        const fileName = item.getFilename();
+        
+        // 让用户选择保存位置
+        const filePath = dialog.showSaveDialogSync({
+          defaultPath: fileName
+        });
 
-                if (choice.response === 0) {  // 用户点击了确认
-                    // 清除所有数据
-                    await Promise.all([
-                        adminWindow.webContents.session.clearCache(),
-                        adminWindow.webContents.session.clearStorageData({
-                            storages: [
-                                'appcache',
-                                'cookies',
-                                'filesystem',
-                                'indexdb',
-                                'localstorage',
-                                'shadercache',
-                                'websql',
-                                'serviceworkers',
-                                'cachestorage'
-                            ]
-                        })
-                    ]);
+        if (filePath) {
+          // 设置保存路径
+          item.setSavePath(filePath);
 
-                    // 重载窗口
-                    adminWindow.reload();
+          // 监听下载进度
+          item.on('updated', (event, state) => {
+            if (state === 'progressing' && !item.isPaused()) {
+              const progress = item.getReceivedBytes() / item.getTotalBytes() * 100;
+              // 发送WebViewer专用的下载进度消息
+              BrowserWindow.getAllWindows().forEach(win => {
+                if (!win.isDestroyed()) {
+                  win.webContents.send('webviewer-download-progress', {
+                    progress: progress,
+                    state: 'progressing',
+                    fileName: fileName
+                  });
                 }
+              });
             }
+          });
+
+          // 下载完成
+          item.on('done', (event, state) => {
+            BrowserWindow.getAllWindows().forEach(win => {
+              if (!win.isDestroyed()) {
+                win.webContents.send('webviewer-download-progress', {
+                  progress: 100,
+                  state: state,
+                  fileName: fileName
+                });
+              }
+            });
+          });
+        } else {
+          // 如果用户取消选择保存位置，取消下载
+          item.cancel();
         }
-    ];
-
-    // 创建菜单
-    const menu = Menu.buildFromTemplate(menuTemplate);
-
-    adminWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
-        autoHideMenuBar: false, // 显示菜单栏
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-        }
-    });
-
-    // 设置菜单
-    adminWindow.setMenu(menu);
-
-    adminWindow.loadURL('https://adofaitools.top/');
-
-    adminWindow.on('closed', () => {
-        adminWindow = null;
-    });
-});
-
-// 移除原有的checkForUpdates函数
-// 添加新的更新检查逻辑
-let updaterWindow = null;
-
-async function checkForUpdates() {
-  // 创建更新窗口
-  updaterWindow = new BrowserWindow({
-    width: 400,
-    height: 300,
-    frame: false,
-    resizable: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      });
     }
   });
+}
 
-  updaterWindow.loadFile('updater.html');
-
+async function checkUpdate() {
   try {
-    const localVersion = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json')));
-    const serverVersion = await fetchJson('https://adofaitools.top/version.json');
+    const response = await axios.get('https://adofaitools.top/api/check_update.php')
+    const currentVersion = app.getVersion()
     
-    if (serverVersion.version > localVersion.version) {
-      updaterWindow.webContents.send('update-status', '发现新版本，正在下载...');
-      const downloadPath = path.join(app.getPath('temp'), 'ADOFAI-Tools-Update.exe');
-      // 下载逻辑...
-      updaterWindow.webContents.send('update-downloaded', downloadPath);
+    if (response.data.version > currentVersion) {
+      updateWindow.webContents.send('update-available', response.data)
     } else {
-      updaterWindow.webContents.send('update-status', '已是最新版本');
-      // 延迟3秒后关闭更新窗口并显示主窗口
-      setTimeout(() => {
-        updaterWindow.close();
-        initializeApp();
-      }, 3000);
+      updateWindow.webContents.send('no-update')
     }
   } catch (error) {
-    console.error('检查更新失败:', error);
-    updaterWindow.webContents.send('update-status', '检查更新失败，正在启动程序...');
-    setTimeout(() => {
-      updaterWindow.close();
-      initializeApp();
-    }, 3000);
+    console.error('更新检查失败:', error)
+    updateWindow.webContents.send('no-update')
   }
 }
+
+// 窗口控制处理
+ipcMain.on('window-control', (event, command) => {
+  const window = BrowserWindow.getFocusedWindow()
+  if (!window) return
+
+  switch (command) {
+    case 'minimize':
+      window.minimize()
+      break
+    case 'maximize':
+      if (window.isMaximized()) {
+        window.unmaximize()
+      } else {
+        window.maximize()
+      }
+      break
+    case 'close':
+      window.hide()
+      break
+  }
+})
 
 // 修改启动逻辑
 app.whenReady().then(() => {
-  if (!process.argv.includes('--skip-update-check')) {
-    checkForUpdates();
+  // 检查是否是从托盘图标启动
+  const isRestart = process.argv.includes('--restart')
+  
+  if (!isRestart) {
+    createUpdateWindow()
   } else {
-    initializeApp();
+    createMainWindow()
   }
-});
+  
+  createTray()
+})
 
-// 修改IPC事件处理
-ipcMain.on('install-update', (event, filePath) => {
-  spawn(filePath, [], {
-    detached: true,
-    stdio: 'ignore'
-  }).unref();
-  app.quit();
-});
+ipcMain.on('check-update', () => {
+  checkUpdate()
+})
 
-// 移动 app.whenReady() 的内容到新函数
-function initializeApp() {
-  createWindow();
+ipcMain.on('load-main-window', () => {
+  createMainWindow()
+  updateWindow.close()
+})
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+ipcMain.on('open-download-url', (event, url) => {
+  // 检查url是否是一个对象（包含win和mac链接）
+  if (typeof url === 'object' && url !== null) {
+    const platform = process.platform
+    const downloadUrl = platform === 'darwin' ? url.mac : url.win
+    if (downloadUrl) {
+      shell.openExternal(downloadUrl)
+      app.quit()
     } else {
-      mainWindow.show();
+      console.error(`没有找到${platform}平台的下载链接`)
     }
-  });
-}
-
-// 处理第二个实例启动
-app.on('second-instance', () => {
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-  }
-});
-
-// 添加退出前的清理
-app.on('before-quit', () => {
-  app.isQuitting = true;
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  } else {
+    // 向后兼容：如果url是字符串，直接打开
+    shell.openExternal(url)
     app.quit()
   }
 })
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    isQuiting = true
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createMainWindow()
+  } else {
+    mainWindow.show()
+  }
+}) 

@@ -1,0 +1,58 @@
+# 依赖目录
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# 构建输出
+dist/
+build/
+release/
+out/
+
+# Electron 打包输出
+*.exe
+*.dmg
+*.app
+*.zip
+*.tar.gz
+*.msi
+*.asar
+
+# IDE 和编辑器文件
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 环境变量和配置文件
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+logs/
+*.log
+
+# 缓存文件
+.cache/
+.temp/
+
+# 测试覆盖率报告
+coverage/
+
+# 临时文件
+tmp/
+temp/
+
+# Windows 特定文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS 特定文件
+.DS_Store
+.AppleDouble
+.LSOverride
+._* 
