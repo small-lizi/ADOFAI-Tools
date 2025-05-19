@@ -5,8 +5,11 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder build --win --publish never",
-    "dist": "electron-builder"
+    "make-icns": "node scripts/make-icns.js",
+    "build:win": "electron-builder build --win --publish never",
+    "build:mac": "npm run make-icns && electron-builder --mac",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "author": {
     "name": "MemSys_Lizi",
@@ -22,10 +25,12 @@
     "axios": "^1.6.5"
   },
   "build": {
-    "appId": "com.memsyslizi.adofai-tools",
+    "appId": "cn.memsyslizi.adofaitools",
     "productName": "ADOFAI Tools",
+    "copyright": "Copyright © 2024 MemSys_Lizi",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "win": {
       "icon": "assets/img/icon.ico",
@@ -43,6 +48,46 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "icon": "build/icon.icns",
+      "iconSize": 128,
+      "contents": [
+        {
+          "x": 380,
+          "y": 240,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 122,
+          "y": 240,
+          "type": "file"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "protocols": {
+      "name": "ADOFAI Tools URL",
+      "schemes": [
+        "adofaitools"
+      ]
     }
   }
 }
