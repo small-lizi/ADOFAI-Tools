@@ -1,0 +1,2 @@
+import languageProperties from "./prop";
+

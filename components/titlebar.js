@@ -1,3 +1,6 @@
+import languageProperties from '../i18n/prop.js'
+let curlang = languageProperties.getlang();
+
 class TitleBar extends HTMLElement {
     constructor() {
         super();
@@ -186,49 +189,49 @@ class TitleBar extends HTMLElement {
             <div class="title-section">
                 <img src="../assets/img/icon.png" class="app-icon" alt="App Icon">
                 <span class="app-title">ADOFAI-Tools</span>
-                <div class="clear-cache" title="清除缓存并重启">
+                <div class="clear-cache" title="${languageProperties[curlang].main['clearCache_tip']}">
                     <svg viewBox="0 0 24 24">
                         <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                     </svg>
-                    清除缓存
+                    ${languageProperties[curlang].main['clearCache']}
                 </div>
             </div>
             <div class="nav-controls">
-                <button class="nav-button" id="backButton" title="后退">
+                <button class="nav-button" id="backButton" title="${languageProperties[curlang].main['back']}">
                     <svg viewBox="0 0 24 24">
                         <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
                     </svg>
                 </button>
-                <button class="nav-button" id="forwardButton" title="前进">
+                <button class="nav-button" id="forwardButton" title="${languageProperties[curlang].main['forward']}">
                     <svg viewBox="0 0 24 24">
                         <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
                     </svg>
                 </button>
-                <button class="nav-button" id="refreshButton" title="刷新">
+                <button class="nav-button" id="refreshButton" title="${languageProperties[curlang].main['refresh']}">
                     <svg viewBox="0 0 24 24">
                         <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                     </svg>
                 </button>
             </div>
             <div class="login-button">
-                <img src="../assets/img/default-avatar.png" alt="登录">
-                <span>登录</span>
+                <img src="../assets/img/default-avatar.png" alt="${languageProperties[curlang].main['account']}">
+                <span>${languageProperties[curlang].main['account']}</span>
                 <div class="login-popup">
                     <iframe src="https://adofaitools.top/users/login.php" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="window-controls">
-                <div class="control-button minimize-button" title="最小化">
+                <div class="control-button minimize-button" title="${languageProperties[curlang].main['mini']}">
                     <svg class="control-icon" viewBox="0 0 10 1">
                         <path d="M0 0h10v1H0z"/>
                     </svg>
                 </div>
-                <div class="control-button maximize-button" title="最大化">
+                <div class="control-button maximize-button" title="${languageProperties[curlang].main['max']}">
                     <svg class="control-icon" viewBox="0 0 10 10">
                         <path d="M0 0v10h10V0H0zm1 1h8v8H1V1z"/>
                     </svg>
                 </div>
-                <div class="control-button close-button" title="关闭">
+                <div class="control-button close-button" title="${languageProperties[curlang].main['close']}">
                     <svg class="control-icon" viewBox="0 0 10 10">
                         <path d="M1 0L0 1l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4-1-1-4 4-4-4z"/>
                     </svg>
@@ -239,7 +242,7 @@ class TitleBar extends HTMLElement {
 
     setupEventListeners() {
         const { ipcRenderer } = require('electron');
-        
+
         this.shadowRoot.querySelector('.minimize-button').addEventListener('click', () => {
             ipcRenderer.send('window-control', 'minimize');
         });

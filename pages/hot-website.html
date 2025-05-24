@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>ADOFAI Tools - 热门页面</title>
+    <title>HotPages - ADOFAI Tools</title>
     <style>
         body {
             margin: 0;
@@ -37,18 +37,17 @@
             <!-- WebViewer will be inserted here -->
         </div>
     </div>
-
-    <script src="../components/titlebar.js"></script>
-    <script src="../components/sidebar.js"></script>
-    <script src="../components/webviewer.js"></script>
+    <script src="../components/titlebar.js" type="module"></script>
+    <script src="../components/sidebar.js" type="module"></script>
+    <script src="../components/webviewer.js" type="module"></script>
     <script>
         // 从 URL 参数获取网站地址
         const urlParams = new URLSearchParams(window.location.search);
         const websiteUrl = urlParams.get('url');
-        const pageTitle = urlParams.get('title') || '热门页面';
+        const pageTitle = urlParams.get('title') || 'Hot Pages';
         
         // 设置页面标题
-        document.title = `ADOFAI Tools - ${pageTitle}`;
+        document.title = `${pageTitle} - ADOFAI Tools`;
         
         // 创建 WebViewer
         if (websiteUrl) {

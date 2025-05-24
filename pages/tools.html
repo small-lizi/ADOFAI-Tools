@@ -504,13 +504,21 @@
         </div>
     </div>
     <div id="contextMenu" class="context-menu">
-        <div class="context-menu-item" id="menuOpenFolder">打开工具文件夹</div>
-        <div class="context-menu-item" id="menuOpenDoc">在浏览器中打开文档</div>
+        <div class="context-menu-item" id="menuOpenFolder">{{menuOpenFolder}}</div>
+        <div class="context-menu-item" id="menuOpenDoc">{{menuOpenDoc}}</div>
     </div>
-    <script src="../components/titlebar.js"></script>
-    <script src="../components/sidebar.js"></script>
-    <script src="../components/webviewer.js"></script>
-    <script>
+    <script src="../components/titlebar.js" type="module"></script>
+    <script src="../components/sidebar.js" type="module"></script>
+    <script src="../components/webviewer.js" type="module"></script>
+    <script src="../scripts/vue.esm-browser.js"></script>
+    <script type="module">
+        //import {languageProperties,getlang} from '../i18n/prop.js'
+        //let curlang = getlang();
+        var app = Vue.createApp({         // 创建Vue对象。Vue的核心对象。
+            el: '#contextMenu',               // el属性：把当前Vue对象挂载到 div标签上，#app是id选择器
+            data: function(){return languageProperties[curlang].community}
+        });
+        app.mount('#contextMenu');
         // 监听页面切换事件
         document.addEventListener('page-change', (event) => {
             const page = event.detail.page;
@@ -564,7 +572,7 @@
             const status = downloadStatus.get(toolId);
             const info = await ipcRenderer.invoke('get-tool-info', toolId);
 
-            let buttonText = '下载';
+            let buttonText = languageProperties[curlang].status['0'];
             let progress = 0;
             let disabled = false;
             let onClick = `handleDownload('${toolId}', '${selectedTool.downloadUrl}', '${selectedTool.version}')`;
@@ -572,35 +580,35 @@
             if (status) {
                 switch (status.status) {
                     case 'downloading':
-                        buttonText = `下载中 ${status.progress}%`;
+                        buttonText = `${languageProperties[curlang].status['1']} ${status.progress}%`;
                         progress = status.progress;
                         disabled = true;
                         break;
                     case 'completed':
-                        buttonText = '已下载';
+                        buttonText = `${languageProperties[curlang].status['2']}`;
                         progress = 100;
                         disabled = true;
                         break;
                     case 'ready':
-                        buttonText = '打开';
+                        buttonText = `${languageProperties[curlang].status['3']}`;
                         progress = 100;
                         onClick = `openToolDirectory('${toolId}')`;
                         break;
                     case 'needUpdate':
-                        buttonText = '更新';
+                        buttonText = `${languageProperties[curlang].status['4']}`;
                         progress = 100;
                         break;
                     case 'error':
-                        buttonText = '下载失败';
+                        buttonText = `${languageProperties[curlang].status['5']}`;
                         break;
                 }
             } else if (info) {
                 // 如果有本地信息但没有下载状态，设置为ready或needUpdate
                 if (info.version < selectedTool.version) {
-                    buttonText = '更新';
+                    buttonText = `${languageProperties[curlang].status['4']}`;
                     progress = 100;
                 } else {
-                    buttonText = '打开';
+                    buttonText = `${languageProperties[curlang].status['3']}`;
                     progress = 100;
                     onClick = `openToolDirectory('${toolId}')`;
                 }
@@ -664,6 +672,7 @@
             }
         }
 
+        window.handleDownload = handleDownload;
         // 渲染选中的工具头部信息
         function renderSelectedToolHeader() {
             const headerElement = document.getElementById('selectedToolHeader');
@@ -680,9 +689,9 @@
                     <div class="tool-header-info">
                         <h2>${selectedTool.name}</h2>
                         <div class="tool-meta-info">
-                            <span class="meta-item">版本 ${selectedTool.version}</span>
-                            <span class="meta-item">下载次数 ${selectedTool.downloads || 0}</span>
-                            <span class="meta-item">发布于 ${selectedTool.releaseDate}</span>
+                            <span class="meta-item">${languageProperties[curlang].status['6']} ${selectedTool.version}</span>
+                            <span class="meta-item">${languageProperties[curlang].status['7']} ${selectedTool.downloads || 0}</span>
+                            <span class="meta-item">${languageProperties[curlang].status['8']} ${selectedTool.releaseDate}</span>
                         </div>
                         <div class="author-info" onclick="openAuthorLink('${selectedTool.author.link}')">
                             <img src="${selectedTool.author.avatar}" class="author-avatar" alt="${selectedTool.author.name}">
@@ -692,23 +701,23 @@
                 </div>
                 <div class="tool-header-buttons">
                     <button class="tool-header-button">
-                        简介
+                        ${languageProperties[curlang].status['9']}
                         <div class="tooltip-content description">
-                            <div class="tooltip-title">工具简介</div>
-                            <div class="tooltip-body">${selectedTool.description || '暂无简介'}</div>
+                            <div class="tooltip-title">${languageProperties[curlang].status['9']}</div>
+                            <div class="tooltip-body">${selectedTool.description || languageProperties[curlang].status['10']}</div>
                         </div>
                     </button>
                     <button class="tool-header-button">
-                        更新日志
+                        ${languageProperties[curlang].status['updateLog']}
                         <div class="tooltip-content changelog">
-                            <div class="tooltip-title">更新日志</div>
+                            <div class="tooltip-title">${languageProperties[curlang].status['updateLog']}</div>
                             <div class="tooltip-body">${formattedChangelog}</div>
                         </div>
                     </button>
                 </div>
                 <button class="download-button" onclick="handleDownload('${selectedTool.id}', '${selectedTool.downloadUrl}', '${selectedTool.version}')">
                     <div class="download-progress" style="width: 0%"></div>
-                    <span class="download-text">下载</span>
+                    <span class="download-text">${languageProperties[curlang].status['0']}</span>
                 </button>
             `;
 
@@ -718,7 +727,7 @@
 
         // 格式化更新日志
         function formatChangelog(changelog) {
-            if (!changelog) return '暂无更新日志';
+            if (!changelog) return languageProperties[curlang].status['noUpdateLog'];
             
             // 假设changelog是一个数组，每个元素包含version、date和content
             if (Array.isArray(changelog)) {
@@ -741,6 +750,7 @@
             const { shell } = require('electron');
             shell.openExternal(url);
         }
+        window.openAuthorLink = openAuthorLink;
 
         // 渲染工具列表
         function renderToolList() {
@@ -787,7 +797,7 @@
                 `;
             } else {
                 contentElement.innerHTML = `
-                    <div class="no-doc-message">该工具暂时没有文档</div>
+                    <div class="no-doc-message">${languageProperties[curlang].status['nodoc']}</div>
                 `;
             }
         }
@@ -818,11 +828,14 @@
             renderToolDetails();
         }
 
+        window.selectTool = selectTool;
         // 打开链接
         function openLink(url) {
             if (!url) return;
             window.open(url);
         }
+
+        window.openLink = openLink;
 
         // 打开工具目录
         async function openToolDirectory(toolId) {
@@ -832,6 +845,7 @@
                 console.error('打开工具目录失败:', err);
             }
         }
+        window.openToolDirectory = openToolDirectory;
 
         // 获取工具列表数据
         async function fetchTools() {

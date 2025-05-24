@@ -1,3 +1,6 @@
+import languageProperties from '../i18n/prop.js'
+let curlang = languageProperties.getlang();
+
 class WebViewer extends HTMLElement {
     constructor() {
         super();
@@ -244,7 +247,7 @@ class WebViewer extends HTMLElement {
                         partition="${partition}"
                         backgroundColor="#ffffff">
                     </webview>
-                    <div class="loading">加载中...</div>
+                    <div class="loading">${languageProperties[curlang].main['loading']}</div>
                     <div class="download-progress">
                         <div class="download-info">
                             <span class="download-name"></span>
@@ -304,7 +307,7 @@ class WebViewer extends HTMLElement {
                 // 下载取消或中断时立即隐藏进度条
                 downloadProgress.classList.remove('visible');
                 progressFill.style.width = '0';
-                downloadName.textContent = `${data.fileName} - ${data.state === 'cancelled' ? '已取消' : '已中断'}`;
+                downloadName.textContent = `${data.fileName} - ${data.state === 'cancelled' ? 'Canceled.' : 'Paused.'}`;
             }
         });
 
@@ -326,7 +329,7 @@ class WebViewer extends HTMLElement {
                 <svg viewBox="0 0 24 24">
                     <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
                 </svg>
-                ${isOpen ? '关闭评论' : '评论区'}
+                ${isOpen ? languageProperties[curlang].main['close_comments'] : languageProperties[curlang].main['comments']}
             `;
         });
 
@@ -341,7 +344,7 @@ class WebViewer extends HTMLElement {
 
         webview.addEventListener('did-fail-load', (event) => {
             if (event.errorCode !== -3) {
-                loading.textContent = '加载失败，请检查网络连接';
+                loading.textContent = `${languageProperties[curlang].main['load_failed']}`;
                 loading.classList.add('visible');
                 setTimeout(() => {
                     loading.classList.remove('visible');
@@ -370,3 +373,5 @@ class WebViewer extends HTMLElement {
 }
 
 customElements.define('web-viewer', WebViewer); 
+window.languageProperties = languageProperties;
+window.curlang = curlang;

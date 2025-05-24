@@ -1,3 +1,6 @@
+import languageProperties from '../i18n/prop.js'
+let curlang = languageProperties.getlang();
+
 class Sidebar extends HTMLElement {
     constructor() {
         super();
@@ -151,33 +154,33 @@ class Sidebar extends HTMLElement {
             </style>
             <nav class="sidebar-nav" id="sidebarNav">
                 <div class="nav-item" data-page="shouye">
-                    <img src="../assets/img/shouye.png" alt="首页">
-                    <span class="tooltip">首页</span>
+                    <img src="../assets/img/shouye.png" alt="${languageProperties[curlang].page['home']}">
+                    <span class="tooltip">${languageProperties[curlang].page['home']}</span>
                 </div>
                 <div class="nav-item" data-page="tools">
-                    <img src="../assets/img/tools.png" alt="工具">
-                    <span class="tooltip">工具</span>
+                    <img src="../assets/img/tools.png" alt="${languageProperties[curlang].page['tools']}">
+                    <span class="tooltip">${languageProperties[curlang].page['tools']}</span>
                 </div>
                 <div class="nav-item" data-page="online-tools">
-                    <img src="../assets/img/tools.png" alt="在线工具">
-                    <span class="tooltip">在线工具</span>
+                    <img src="../assets/img/tools.png" alt="${languageProperties[curlang].page['onlinetools']}">
+                    <span class="tooltip">${languageProperties[curlang].page['onlinetools']}</span>
                 </div>
                 <div class="nav-item" data-page="community">
-                    <img src="../assets/img/chart.png" alt="社区">
-                    <span class="tooltip">社区</span>
+                    <img src="../assets/img/chart.png" alt="${languageProperties[curlang].page['community']}">
+                    <span class="tooltip">${languageProperties[curlang].page['community']}</span>
                 </div>
                 <div class="divider"></div>
                 <!-- 热门页面将在这里动态添加 -->
             </nav>
             <div class="admin-section">
                 <div class="nav-item" data-page="admin">
-                    <img src="../assets/img/admin.png" alt="开发者控制台">
-                    <span class="tooltip">开发者控制台</span>
+                    <img src="../assets/img/admin.png" alt="${languageProperties[curlang].page['console']}">
+                    <span class="tooltip">${languageProperties[curlang].page['console']}</span>
                 </div>
             </div>
             <!-- 添加右键菜单 -->
             <div class="context-menu" id="adminContextMenu">
-                <div class="context-menu-item" id="menuOpenInBrowser">在浏览器中打开</div>
+                <div class="context-menu-item" id="menuOpenInBrowser">${languageProperties[curlang].community['menuOpenInBrowser']}</div>
             </div>
         `;
 
@@ -189,13 +192,13 @@ class Sidebar extends HTMLElement {
         try {
             const response = await fetch('https://adofaitools.top/api/get_hotpages.php');
             const hotPages = await response.json();
-            
+
             // 保存热门页面数据
             this.hotPages = hotPages;
-            
+
             // 渲染热门页面导航项
             const nav = this.shadowRoot.getElementById('sidebarNav');
-            
+
             hotPages.forEach((page, index) => {
                 const pageId = `hot-page-${index}`;
                 const navItem = document.createElement('div');
@@ -203,15 +206,15 @@ class Sidebar extends HTMLElement {
                 navItem.dataset.page = pageId;
                 navItem.dataset.type = page.type;
                 navItem.dataset.url = page.type === 'website' ? page.url : page.api;
-                
+
                 navItem.innerHTML = `
                     <img src="${page.icon}" alt="${page.name}">
                     <span class="tooltip">${page.name}</span>
                 `;
-                
+
                 nav.appendChild(navItem);
             });
-            
+
             // 更新事件监听
             this.setupEventListeners();
         } catch (error) {
@@ -222,7 +225,7 @@ class Sidebar extends HTMLElement {
     updateActiveState() {
         const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
         const navItems = this.shadowRoot.querySelectorAll('.nav-item');
-        
+
         navItems.forEach(item => {
             if (item.dataset.page === currentPage) {
                 item.classList.add('active');
@@ -237,19 +240,19 @@ class Sidebar extends HTMLElement {
         const navItems = this.shadowRoot.querySelectorAll('.nav-item');
         const adminButton = this.shadowRoot.querySelector('[data-page="admin"]');
         const contextMenu = this.shadowRoot.getElementById('adminContextMenu');
-        
+
         navItems.forEach(item => {
             item.addEventListener('click', () => {
                 const page = item.dataset.page;
                 const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
-                
+
                 if (page !== currentPage) {
                     // 处理热门页面
                     if (page.startsWith('hot-page-')) {
                         const type = item.dataset.type;
                         const url = item.dataset.url;
                         const name = item.querySelector('.tooltip').textContent;
-                        
+
                         if (type === 'website') {
                             window.location.href = `../pages/hot-website.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(name)}`;
                         }
@@ -263,27 +266,27 @@ class Sidebar extends HTMLElement {
         // 为开发者控制台按钮添加右键菜单
         adminButton.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            
+
             // 显示右键菜单
             contextMenu.style.display = 'block';
-            
+
             // 调整菜单位置
             let x = e.clientX;
             let y = e.clientY;
-            
+
             const menuWidth = contextMenu.offsetWidth;
             const menuHeight = contextMenu.offsetHeight;
             const windowWidth = window.innerWidth;
             const windowHeight = window.innerHeight;
-            
+
             if (x + menuWidth > windowWidth) {
                 x = windowWidth - menuWidth;
             }
-            
+
             if (y + menuHeight > windowHeight) {
                 y = windowHeight - menuHeight;
             }
-            
+
             contextMenu.style.left = x + 'px';
             contextMenu.style.top = y + 'px';
         });

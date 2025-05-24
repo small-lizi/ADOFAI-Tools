@@ -1,9 +1,11 @@
 {
   "name": "adofai-tools",
-  "version": "1.6.7",
+  "version": "1.7.0",
   "description": "ADOFAI Tools - A Rhythm Game Tool Collection",
-  "main": "main.js",
+  "main": "index.mjs",
+  "type": "module",
   "scripts": {
+    "dev": "electron .",
     "start": "electron .",
     "make-icns": "node scripts/make-icns.js",
     "build:win": "electron-builder build --win --publish never",
@@ -16,13 +18,14 @@
     "email": "001@memsyslizi.site"
   },
   "license": "MIT",
-  "devDependencies": {
-    "electron": "^28.2.0",
-    "electron-builder": "^24.13.3"
-  },
   "dependencies": {
     "adm-zip": "^0.5.10",
     "axios": "^1.6.5"
+  },
+  "devDependencies": {
+    "electron": "^36.2.1",
+    "vue": "^3.5.14",
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "cn.memsyslizi.adofaitools",
@@ -32,6 +35,12 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
     "win": {
       "icon": "assets/img/icon.ico",
       "target": [

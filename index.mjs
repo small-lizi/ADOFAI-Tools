@@ -1,9 +1,9 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog } = require('electron')
-const path = require('path')
-const axios = require('axios')
-const fs = require('fs')
-const os = require('os')
-const AdmZip = require('adm-zip')
+import { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog } from 'electron';
+import path from 'path';
+import axios from 'axios';
+import * as fs from 'fs';
+import os from 'os';
+import AdmZip from 'adm-zip';
 
 let mainWindow = null
 let updateWindow = null
@@ -29,20 +29,20 @@ if (!gotTheLock) {
 // 创建托盘图标
 function createTray() {
     const iconPath = process.platform === 'darwin' 
-        ? path.join(__dirname, 'assets', 'img', 'icon-mac.png')
-        : path.join(__dirname, 'assets', 'img', 'icon.png')
+        ? path.join(app.getAppPath(), 'assets', 'img', 'icon-mac.png')
+        : path.join(app.getAppPath(), 'assets', 'img', 'icon.png')
     
     tray = new Tray(iconPath)
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: '显示主窗口',
+            label: 'Show Main Window',
             click: () => {
                 mainWindow.show()
                 mainWindow.focus()
             }
         },
         {
-            label: '退出',
+            label: 'Exit',
             click: () => {
                 isQuiting = true
                 app.quit()
@@ -65,11 +65,11 @@ function getToolsPath() {
   const platform = process.platform
   if (platform === 'darwin') {
     // macOS: 应用程序文件夹
-    return path.join('/Applications', 'RD Plugin Hub')
+    return path.join('/Applications', 'ADOFAI Tools')
   } else if (platform === 'win32') {
     // Windows: 优先使用D盘，没有则使用C盘
-    const dDrivePath = 'D:\\RD Plugin Hub'
-    const cDrivePath = 'C:\\RD Plugin Hub'
+    const dDrivePath = 'D:\\ADOFAI Tools'
+    const cDrivePath = 'C:\\ADOFAI Tools'
     
     try {
       // 检查D盘是否存在且可写
@@ -275,7 +275,7 @@ function createUpdateWindow() {
   updateWindow = new BrowserWindow({
     width: 800,
     height: 500,
-    icon: path.join(__dirname, 'assets', 'img', 'icon.png'),
+    icon: path.join(path.dirname('.'), 'assets', 'img', 'icon.png'),
     frame: false,
     resizable: false,
     transparent: true,
@@ -295,7 +295,7 @@ function createMainWindow() {
     width: 1600,
     height: 900,
     frame: false,
-    icon: path.join(__dirname, 'assets', 'img', 'icon.png'),
+    icon: path.join(path.dirname('.'), 'assets', 'img', 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

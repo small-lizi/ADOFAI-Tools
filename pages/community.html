@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
-    <title>ADOFAI Tools - 社区</title>
+    <title>Community - ADOFAI Tools</title>
     <style>
         body {
             margin: 0;
@@ -103,6 +104,7 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -143,6 +145,7 @@
         }
     </style>
 </head>
+
 <body>
     <title-bar></title-bar>
     <div class="main-container">
@@ -156,13 +159,21 @@
     </div>
     <!-- 添加右键菜单 -->
     <div id="contextMenu" class="context-menu">
-        <div class="context-menu-item" id="menuOpenInBrowser">在浏览器中打开</div>
-        <div class="context-menu-item" id="menuCopyUrl">复制链接</div>
+        <div class="context-menu-item" id="menuOpenInBrowser">{{menuOpenInBrowser}}</div>
+        <div class="context-menu-item" id="menuCopyUrl">{{menuCopyUrl}}</div>
     </div>
-    <script src="../components/titlebar.js"></script>
-    <script src="../components/sidebar.js"></script>
-    <script src="../components/webviewer.js"></script>
-    <script>
+    <script src="../components/titlebar.js" type="module"></script>
+    <script src="../components/sidebar.js" type="module"></script>
+    <script src="../components/webviewer.js" type="module"></script>
+    <script src="../scripts/vue.esm-browser.js"></script>
+    <script type="module">
+        //import {languageProperties,getlang} from '../i18n/prop.js'
+        //let curlang = getlang();
+        var app = Vue.createApp({         // 创建Vue对象。Vue的核心对象。
+            el: '#contextMenu',               // el属性：把当前Vue对象挂载到 div标签上，#app是id选择器
+            data: function(){return languageProperties[curlang].community}
+        });
+        app.mount('#contextMenu');
         // 获取工具列表并渲染
         async function fetchAndRenderTools() {
             try {
@@ -174,15 +185,15 @@
                 data.downloads.forEach((tool, index) => {
                     const toolIcon = document.createElement('div');
                     toolIcon.className = 'tool-icon';
-                    
+
                     const toolName = document.createElement('div');
                     toolName.className = 'tool-name';
                     toolName.textContent = tool.name;
-                    
+
                     const img = document.createElement('img');
                     img.src = tool.icon;
                     img.alt = tool.name;
-                    
+
                     toolIcon.appendChild(img);
                     toolIcon.appendChild(toolName);
 
@@ -220,28 +231,28 @@
         // 显示右键菜单
         function showContextMenu(e, tool) {
             e.preventDefault();
-            
+
             contextMenuTool = tool;
             const menu = document.getElementById('contextMenu');
             menu.style.display = 'block';
-            
+
             // 调整菜单位置
             let x = e.clientX;
             let y = e.clientY;
-            
+
             const menuWidth = menu.offsetWidth;
             const menuHeight = menu.offsetHeight;
             const windowWidth = window.innerWidth;
             const windowHeight = window.innerHeight;
-            
+
             if (x + menuWidth > windowWidth) {
                 x = windowWidth - menuWidth;
             }
-            
+
             if (y + menuHeight > windowHeight) {
                 y = windowHeight - menuHeight;
             }
-            
+
             menu.style.left = x + 'px';
             menu.style.top = y + 'px';
         }
@@ -261,7 +272,7 @@
                     hideContextMenu();
                 }
             });
-            
+
             // 在浏览器中打开
             document.getElementById('menuOpenInBrowser').addEventListener('click', () => {
                 if (contextMenuTool) {
@@ -270,7 +281,7 @@
                 }
                 hideContextMenu();
             });
-            
+
             // 复制链接
             document.getElementById('menuCopyUrl').addEventListener('click', () => {
                 if (contextMenuTool) {
@@ -294,4 +305,5 @@
         });
     </script>
 </body>
-</html> 
+
+</html>

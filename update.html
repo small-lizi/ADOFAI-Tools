@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>检查更新</title>
+    <title>Checking for Updates</title>
     <style>
         body {
             margin: 0;
@@ -107,6 +107,7 @@
     </div>
     <script>
         const { ipcRenderer } = require('electron');
+
         let updateInfo = null;
         let startTime = Date.now();
         const minDisplayTime = 5000; // 最小显示时间5秒
