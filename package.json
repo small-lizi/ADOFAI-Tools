@@ -66,10 +66,11 @@
         "zip"
       ],
       "darkModeSupport": true,
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlements": null,
+      "entitlementsInherit": null,
+      "identity": null
     },
     "dmg": {
       "icon": "build/icon.icns",
